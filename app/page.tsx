@@ -4,10 +4,19 @@ import { useState, useEffect } from "react";
 
 const CATEGORIES = [
   { id: "mais", label: "Mais vendidos", emoji: "🔥" },
-  { id: "king", label: "Açaí King", emoji: "👑" },
+  { id: "king", label: "Açaí do King", emoji: "👑" },
   { id: "tropical", label: "Tropical", emoji: "🍍" },
   { id: "premium", label: "Premium", emoji: "⭐" },
-  { id: "combos", label: "Combos", emoji: "🥤" },
+  { id: "combos", label: "Combos", emoji: "🍨" },
+];
+
+const SIDE_LINKS = [
+  { label: "Cardápio completo", href: "#menu", action: "menu" },
+  { label: "WhatsApp", href: "https://wa.me/12673107535", external: true },
+  { label: "Instagram", href: "https://instagram.com/king.food_delivery", external: true },
+  { label: "Sobre a King Food", href: "#", action: "home" },
+  { label: "Horários e entrega", href: "#", action: "home" },
+  { label: "Fale conosco", href: "https://wa.me/12673107535", external: true },
 ];
 
 export default function Home() {
@@ -15,22 +24,41 @@ export default function Home() {
   const [showLogo, setShowLogo] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [iframeReady, setIframeReady] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     const logoTimer = setTimeout(() => setShowLogo(true), 100);
-    const safetyTimer = setTimeout(() => setLoading(false), 2500);
+    const safetyTimer = setTimeout(() => setLoading(false), 2200);
     return () => {
       clearTimeout(logoTimer);
       clearTimeout(safetyTimer);
     };
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [drawerOpen]);
+
   const openMenu = () => {
+    setDrawerOpen(false);
     setShowMenu(true);
   };
 
-  const handleIframeLoad = () => {
-    setIframeReady(true);
+  const handleSideLink = (link: (typeof SIDE_LINKS)[0]) => {
+    if (link.external && link.href) {
+      window.open(link.href, "_blank", "noopener,noreferrer");
+      setDrawerOpen(false);
+      return;
+    }
+    if (link.action === "menu") {
+      openMenu();
+      return;
+    }
+    setDrawerOpen(false);
+    setShowMenu(false);
   };
 
   // ========== LOADING ==========
@@ -55,272 +83,299 @@ export default function Home() {
         >
           <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
         </div>
-        <p
-          className={`text-black/70 text-xs mt-5 font-medium transition-opacity duration-500 delay-500 ${
-            showLogo ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          Carregando...
-        </p>
       </div>
     );
   }
 
-  // ========== FULL MENU (iframe) ==========
-  if (showMenu) {
-    return (
-      <div className="relative flex flex-col h-screen bg-[#F7F7F5] overflow-hidden">
-        <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 z-20">
-          <button
-            onClick={() => setShowMenu(false)}
-            className="flex items-center gap-2 text-sm font-medium text-gray-700"
-          >
-            <span className="text-lg">←</span>
-            Voltar
-          </button>
+  return (
+    <div className="min-h-screen bg-white pb-24">
+      {/* ========== BARRA PRETA (sempre) ========== */}
+      <header className="sticky top-0 z-40 bg-black text-white">
+        <div className="flex items-center justify-between px-3 py-2.5">
           <div className="flex items-center gap-2">
-            <img
-              src="/logo-kingfood.png.png"
-              alt="King Food"
-              className="w-8 h-8 object-contain"
-            />
-            <span className="font-bold text-sm">Cardápio</span>
+            {/* Hamburger */}
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-lg hover:bg-white/10 transition"
+              aria-label="Abrir menu"
+            >
+              <span className="block w-5 h-0.5 bg-white rounded" />
+              <span className="block w-5 h-0.5 bg-white rounded" />
+              <span className="block w-5 h-0.5 bg-white rounded" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <img
+                src="/logo-kingfood.png.png"
+                alt="King Food"
+                className="w-9 h-9 object-contain rounded-md"
+              />
+              <div className="leading-tight">
+                <p className="font-bold text-sm">King Food</p>
+                <p className="text-[10px] text-white/60">Açaí • Delivery</p>
+              </div>
+            </div>
           </div>
+
           <a
             href="https://wa.me/12673107535"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-green-600 text-sm font-semibold"
+            className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-full transition"
           >
             WhatsApp
           </a>
-        </header>
-
-        <div className="flex-1 relative bg-white">
-          {!iframeReady && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
-              <div className="w-10 h-10 border-4 border-[#FFD100] border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-          <iframe
-            src="https://kingfood.fe-v2.ola.click/products"
-            className="absolute inset-0 w-full h-full border-0"
-            title="Cardápio King Food"
-            allow="payment"
-            onLoad={handleIframeLoad}
-          />
         </div>
-      </div>
-    );
-  }
+      </header>
 
-  // ========== HOME (UX estilo delivery premium) ==========
-  return (
-    <div className="min-h-screen bg-[#F7F7F5] pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-100">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
+      {/* ========== DRAWER LATERAL ========== */}
+      {/* Overlay */}
+      <div
+        className={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 ${
+          drawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setDrawerOpen(false)}
+      />
+
+      {/* Panel */}
+      <aside
+        className={`fixed top-0 left-0 z-50 h-full w-[80%] max-w-xs bg-white shadow-2xl transition-transform duration-300 ease-out ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="bg-black text-white px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <img
               src="/logo-kingfood.png.png"
               alt="King Food"
-              className="w-11 h-11 object-contain"
+              className="w-10 h-10 object-contain rounded-md"
             />
             <div>
-              <h1 className="font-extrabold text-base leading-tight text-black tracking-tight">
-                KING FOOD
-              </h1>
-              <p className="text-[11px] text-gray-500 font-medium">Açaí & Delivery</p>
+              <p className="font-bold">King Food</p>
+              <p className="text-xs text-white/60">Menu</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-lg"
+            aria-label="Fechar"
+          >
+            ✕
+          </button>
+        </div>
+
+        <nav className="py-2">
+          {SIDE_LINKS.map((link) => (
+            <button
+              key={link.label}
+              onClick={() => handleSideLink(link)}
+              className="w-full text-left px-5 py-3.5 text-sm font-medium text-gray-800 hover:bg-purple-50 hover:text-purple-700 border-b border-gray-50 transition"
+            >
+              {link.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
+          <p className="text-xs text-gray-400 text-center">
+            Entrega 50–60 min • Columbus, OH
+          </p>
+        </div>
+      </aside>
+
+      {/* ========== CONTEÚDO ========== */}
+      {showMenu ? (
+        /* Cardápio OlaClick */
+        <div className="relative" style={{ height: "calc(100vh - 52px)" }}>
+          {!iframeReady && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
+              <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+          <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 py-2 bg-white/95 border-b border-gray-100">
+            <button
+              onClick={() => {
+                setShowMenu(false);
+                setIframeReady(false);
+              }}
+              className="text-sm font-semibold text-purple-700"
+            >
+              ← Voltar
+            </button>
+            <span className="text-xs font-medium text-gray-500">Cardápio</span>
+            <span className="w-12" />
+          </div>
+          <iframe
+            src="https://kingfood.fe-v2.ola.click/products"
+            className="w-full h-full border-0 pt-10"
+            title="Cardápio King Food"
+            allow="payment"
+            onLoad={() => setIframeReady(true)}
+          />
+        </div>
+      ) : (
+        /* Home no conceito do cardápio real */
+        <main>
+          {/* Banner roxo (conceito da imagem) */}
+          <div className="bg-gradient-to-r from-purple-700 to-purple-500 px-4 py-2.5 flex items-center justify-between">
+            <p className="text-white text-sm font-semibold">
+              Ganhe pontos e recompensas!
+            </p>
+            <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-sm">
+              👤
+            </span>
+          </div>
+
+          {/* Info da loja */}
+          <div className="px-4 py-4 flex items-start gap-3 border-b border-gray-100">
+            <img
+              src="/logo-kingfood.png.png"
+              alt="King Food"
+              className="w-16 h-16 object-contain rounded-xl bg-[#FFD100] p-1 shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-bold text-lg text-gray-900">King Food</h2>
+                <span className="text-[11px] font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                  ● Fechado
+                </span>
+              </div>
+              <p className="text-sm text-gray-500 mt-0.5">
+                ⏱ Entrega 50 – 60 min
+              </p>
+              <div className="flex gap-2 mt-2">
+                <a
+                  href="https://wa.me/12673107535"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-sm"
+                >
+                  💬
+                </a>
+                <a
+                  href="https://instagram.com/king.food_delivery"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-sm"
+                >
+                  📷
+                </a>
+              </div>
+            </div>
+            <button
+              onClick={openMenu}
+              className="text-xs font-semibold text-purple-700 border border-purple-200 px-3 py-1.5 rounded-full whitespace-nowrap"
+            >
+              Informação
+            </button>
+          </div>
+
+          {/* Abas de categoria (estilo da imagem) */}
+          <div className="sticky top-[52px] z-20 bg-white border-b border-gray-100 overflow-x-auto">
+            <div className="flex gap-1 px-3 py-2 min-w-max">
+              {CATEGORIES.map((cat, i) => (
+                <button
+                  key={cat.id}
+                  onClick={openMenu}
+                  className={`px-3 py-2 text-sm font-semibold whitespace-nowrap rounded-lg transition ${
+                    i === 1
+                      ? "text-purple-700 border-b-2 border-purple-700"
+                      : "text-gray-600"
+                  }`}
+                >
+                  {cat.emoji} {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Mais vendidos - cards */}
+          <section className="px-4 py-4">
+            <h3 className="font-bold text-gray-900 mb-3">Mais vendidos</h3>
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+              {[
+                { name: "Açaí | Trufado", price: "16.90" },
+                { name: "Açaí King", price: "18.90" },
+                { name: "Açaí | Piña", price: "16.50" },
+                { name: "Açaí | Ferrero", price: "17.90" },
+                { name: "Açaí | Sensação", price: "17.90" },
+              ].map((item) => (
+                <button
+                  key={item.name}
+                  onClick={openMenu}
+                  className="min-w-[140px] bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden text-left active:scale-[0.98] transition"
+                >
+                  <div className="aspect-square bg-gradient-to-br from-purple-100 via-amber-50 to-[#FFD100]/40 flex items-center justify-center text-4xl relative">
+                    🍨
+                    <span className="absolute top-2 right-2 w-7 h-7 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-bold">
+                      +
+                    </span>
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-xs font-bold text-gray-900 leading-snug">
+                      US$ {item.price}
+                    </p>
+                    <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                      {item.name}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* CTA principal */}
+          <section className="px-4 pb-6">
+            <button
+              onClick={openMenu}
+              className="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-4 rounded-2xl text-base shadow-lg shadow-purple-700/25 active:scale-[0.99] transition"
+            >
+              Ver cardápio completo →
+            </button>
+          </section>
+        </main>
+      )}
+
+      {/* Bottom nav (só na home) */}
+      {!showMenu && (
+        <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-100 px-6 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <div className="flex items-center justify-between max-w-md mx-auto">
+            <button className="flex flex-col items-center gap-0.5 text-purple-700">
+              <span className="text-xl">🏠</span>
+              <span className="text-[10px] font-semibold">Início</span>
+            </button>
+            <button
+              onClick={openMenu}
+              className="flex flex-col items-center gap-0.5 text-gray-400"
+            >
+              <span className="text-xl">📋</span>
+              <span className="text-[10px] font-semibold">Cardápio</span>
+            </button>
+            <button
+              onClick={openMenu}
+              className="-mt-5 w-14 h-14 rounded-full bg-purple-700 text-white shadow-lg shadow-purple-700/30 flex items-center justify-center text-2xl active:scale-95 transition"
+            >
+              🛒
+            </button>
             <a
               href="https://wa.me/12673107535"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-9 h-9 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-lg"
-              aria-label="WhatsApp"
+              className="flex flex-col items-center gap-0.5 text-gray-400"
             >
-              💬
+              <span className="text-xl">💬</span>
+              <span className="text-[10px] font-semibold">WhatsApp</span>
             </a>
-          </div>
-        </div>
-
-        {/* Barra de entrega */}
-        <div className="px-4 pb-3">
-          <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-3 py-2.5 border border-gray-100">
-            <span className="text-red-500 text-sm">📍</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">
-                Entregar em
-              </p>
-              <p className="text-sm font-semibold text-gray-800 truncate">
-                Columbus, OH • 50–60 min
-              </p>
-            </div>
             <button
-              onClick={openMenu}
-              className="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600"
-              aria-label="Buscar"
+              onClick={() => setDrawerOpen(true)}
+              className="flex flex-col items-center gap-0.5 text-gray-400"
             >
-              🔍
+              <span className="text-xl">☰</span>
+              <span className="text-[10px] font-semibold">Menu</span>
             </button>
           </div>
-        </div>
-      </header>
-
-      <main className="px-4 pt-4 space-y-5">
-        {/* Hero banner */}
-        <section
-          onClick={openMenu}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-black via-gray-900 to-black text-white p-5 cursor-pointer active:scale-[0.99] transition"
-        >
-          <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-[#FFD100]/20 blur-2xl" />
-          <div className="absolute -left-4 bottom-0 w-24 h-24 rounded-full bg-red-500/20 blur-2xl" />
-
-          <p className="text-[#FFD100] text-xs font-bold tracking-widest uppercase mb-2">
-            King Food Delivery
-          </p>
-          <h2 className="text-2xl font-extrabold leading-tight mb-1">
-            Açaí premium.
-            <br />
-            Entrega rápida.
-          </h2>
-          <p className="text-white/70 text-sm mb-4 max-w-[70%]">
-            Monte o seu, escolha os toppings e peça agora.
-          </p>
-          <button className="inline-flex items-center gap-2 bg-[#FFD100] text-black font-bold text-sm px-4 py-2.5 rounded-full">
-            Pedir agora
-            <span>→</span>
-          </button>
-        </section>
-
-        {/* Categorias */}
-        <section>
-          <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={openMenu}
-                className="flex flex-col items-center gap-1.5 min-w-[72px] active:scale-95 transition"
-              >
-                <div className="w-14 h-14 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center text-2xl">
-                  {cat.emoji}
-                </div>
-                <span className="text-[11px] font-semibold text-gray-700 text-center leading-tight">
-                  {cat.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Destaques */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-gray-900 text-base">Mais pedidos</h3>
-            <button
-              onClick={openMenu}
-              className="text-sm font-semibold text-red-600"
-            >
-              Ver tudo →
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { name: "Açaí do King", tag: "👑 Signature" },
-              { name: "Açaí Tropical", tag: "🍍 Frutas" },
-              { name: "Açaí Premium", tag: "⭐ Top" },
-              { name: "Combos", tag: "🔥 Oferta" },
-            ].map((item) => (
-              <button
-                key={item.name}
-                onClick={openMenu}
-                className="bg-white rounded-2xl border border-gray-100 p-3 text-left shadow-sm active:scale-[0.98] transition"
-              >
-                <div className="aspect-square rounded-xl bg-gradient-to-br from-[#FFD100]/40 to-amber-100 mb-3 flex items-center justify-center text-3xl">
-                  🍨
-                </div>
-                <p className="text-[10px] font-bold text-red-600 uppercase tracking-wide mb-0.5">
-                  {item.tag}
-                </p>
-                <p className="font-bold text-sm text-gray-900 leading-snug">
-                  {item.name}
-                </p>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-xs text-gray-500">Ver opções</span>
-                  <span className="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center text-sm font-bold">
-                    +
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Banner fidelidade / CTA */}
-        <section
-          onClick={openMenu}
-          className="rounded-2xl bg-white border border-gray-100 p-4 flex items-center gap-3 cursor-pointer active:scale-[0.99] transition"
-        >
-          <div className="w-12 h-12 rounded-xl bg-[#FFD100] flex items-center justify-center text-2xl shrink-0">
-            👑
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm text-gray-900">Peça no app King Food</p>
-            <p className="text-xs text-gray-500 leading-snug">
-              Cardápio completo com montagem e checkout seguro
-            </p>
-          </div>
-          <button className="bg-black text-white text-xs font-bold px-3 py-2 rounded-full whitespace-nowrap">
-            Abrir
-          </button>
-        </section>
-      </main>
-
-      {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 px-6 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-        <div className="flex items-center justify-between max-w-md mx-auto">
-          <button className="flex flex-col items-center gap-0.5 text-red-600">
-            <span className="text-xl">🏠</span>
-            <span className="text-[10px] font-semibold">Início</span>
-          </button>
-          <button
-            onClick={openMenu}
-            className="flex flex-col items-center gap-0.5 text-gray-400"
-          >
-            <span className="text-xl">📋</span>
-            <span className="text-[10px] font-semibold">Cardápio</span>
-          </button>
-
-          {/* Carrinho central em destaque */}
-          <button
-            onClick={openMenu}
-            className="-mt-5 w-14 h-14 rounded-full bg-red-600 text-white shadow-lg shadow-red-600/30 flex items-center justify-center text-2xl active:scale-95 transition"
-            aria-label="Pedir"
-          >
-            🛒
-          </button>
-
-          <a
-            href="https://wa.me/12673107535"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center gap-0.5 text-gray-400"
-          >
-            <span className="text-xl">💬</span>
-            <span className="text-[10px] font-semibold">WhatsApp</span>
-          </a>
-          <button
-            onClick={openMenu}
-            className="flex flex-col items-center gap-0.5 text-gray-400"
-          >
-            <span className="text-xl">👤</span>
-            <span className="text-[10px] font-semibold">Conta</span>
-          </button>
-        </div>
-      </nav>
+        </nav>
+      )}
     </div>
   );
 }
