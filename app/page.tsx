@@ -4,10 +4,11 @@ import { useState, useEffect, useRef } from "react";
 
 const MENU_URL = "https://kingfood.fe-v2.ola.click/products";
 const WA_URL = "https://wa.me/12673107535";
-// Cole aqui o link do grupo do WhatsApp (chat.whatsapp.com/...)
 const GROUP_URL =
   "https://wa.me/12673107535?text=Ol%C3%A1!%20Quero%20entrar%20no%20grupo%20da%20King%20Food";
 const LOGO = "/logo-kingfood.png.png";
+
+type Tab = "home" | "menu" | "orders" | "rewards";
 
 const SIDE_LINKS = [
   { label: "Cardápio completo", action: "menu" as const },
@@ -39,7 +40,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLogo, setShowLogo] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
+  const [tab, setTab] = useState<Tab>("home");
   const [iframeReady, setIframeReady] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
@@ -61,7 +62,6 @@ export default function Home() {
   }, [drawerOpen]);
 
   useEffect(() => {
-    // Já instalado (standalone) → não mostrar botão
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       // @ts-expect-error iOS Safari
@@ -104,12 +104,22 @@ export default function Home() {
   const openMenu = () => {
     setDrawerOpen(false);
     setIframeReady(false);
-    setShowMenu(true);
+    setTab("menu");
   };
 
   const goHome = () => {
-    setShowMenu(false);
+    setTab("home");
     setIframeReady(false);
+  };
+
+  const openOrders = () => {
+    setDrawerOpen(false);
+    setTab("orders");
+  };
+
+  const openRewards = () => {
+    setDrawerOpen(false);
+    setTab("rewards");
   };
 
   const handleSideLink = (link: (typeof SIDE_LINKS)[0]) => {
@@ -122,6 +132,15 @@ export default function Home() {
       window.open(link.href, "_blank", "noopener,noreferrer");
     }
   };
+
+  const headerSubtitle =
+    tab === "menu"
+      ? "Cardápio"
+      : tab === "orders"
+        ? "Pedidos"
+        : tab === "rewards"
+          ? "Recompensas"
+          : "Açaí • Delivery";
 
   if (loading) {
     return (
@@ -146,7 +165,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
-      {/* ========== BARRA PRETA (sempre visível) ========== */}
+      {/* ========== BARRA PRETA ========== */}
       <header className="shrink-0 z-40 bg-black text-white">
         <div className="flex items-center justify-between px-3 py-2.5">
           <div className="flex items-center gap-2">
@@ -161,26 +180,16 @@ export default function Home() {
               <span className="block w-5 h-0.5 bg-white rounded" />
             </button>
 
-            <button
-              type="button"
-              onClick={goHome}
-              className="flex items-center gap-2"
-            >
-              <img
-                src={LOGO}
-                alt="King Food"
-                className="w-9 h-9 object-contain rounded-md"
-              />
+            <button type="button" onClick={goHome} className="flex items-center gap-2">
+              <img src={LOGO} alt="King Food" className="w-9 h-9 object-contain rounded-md" />
               <div className="leading-tight text-left">
                 <p className="font-bold text-sm">King Food</p>
-                <p className="text-[10px] text-white/60">
-                  {showMenu ? "Cardápio" : "Açaí • Delivery"}
-                </p>
+                <p className="text-[10px] text-white/60">{headerSubtitle}</p>
               </div>
             </button>
           </div>
 
-          {showMenu && (
+          {tab !== "home" && (
             <button
               type="button"
               onClick={goHome}
@@ -244,16 +253,13 @@ export default function Home() {
       </aside>
 
       {/* ========== CONTEÚDO ========== */}
-      {showMenu ? (
+      {tab === "menu" ? (
         <div className="flex-1 relative min-h-0 bg-white">
           {!iframeReady && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-white px-6">
               <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-gray-500">Carregando cardápio...</p>
-              <a
-                href={MENU_URL}
-                className="text-sm font-semibold text-purple-700 underline"
-              >
+              <a href={MENU_URL} className="text-sm font-semibold text-purple-700 underline">
                 Abrir em nova aba
               </a>
             </div>
@@ -266,13 +272,97 @@ export default function Home() {
             onLoad={() => setIframeReady(true)}
           />
         </div>
+      ) : tab === "orders" ? (
+        <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
+          <h2 className="text-lg font-extrabold text-black mb-4">Pedidos</h2>
+
+          <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 mb-5">
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">
+              Em andamento
+            </p>
+            <p className="text-sm font-semibold text-gray-800">Nenhum pedido em andamento</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Quando você fizer um pedido, o status aparece aqui.
+            </p>
+          </div>
+
+          <h3 className="text-sm font-bold text-gray-900 mb-3">Histórico</h3>
+          <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center">
+            <span className="text-3xl" aria-hidden>
+              🧾
+            </span>
+            <p className="text-sm font-medium text-gray-700 mt-2">Sem pedidos anteriores</p>
+            <p className="text-xs text-gray-500 mt-1 mb-4">
+              Faça seu primeiro pedido e acompanhe por aqui.
+            </p>
+            <button
+              type="button"
+              onClick={openMenu}
+              className="inline-flex items-center justify-center bg-purple-700 text-white text-sm font-bold px-4 py-2.5 rounded-full"
+            >
+              Ver cardápio
+            </button>
+          </div>
+
+          <a
+            href={WA_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-5 flex items-center justify-center gap-2 text-sm font-semibold text-green-600"
+          >
+            Dúvida sobre um pedido? WhatsApp
+          </a>
+        </main>
+      ) : tab === "rewards" ? (
+        <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
+          <h2 className="text-lg font-extrabold text-black mb-4">Recompensas</h2>
+
+          <div className="rounded-2xl bg-gradient-to-r from-purple-700 to-purple-500 text-white p-5 mb-5">
+            <p className="text-xs font-bold uppercase tracking-wider text-white/80">
+              Ganhe pontos e recompensas!
+            </p>
+            <p className="text-3xl font-extrabold mt-2">0 pts</p>
+            <p className="text-sm text-white/80 mt-1">
+              A cada pedido você acumula pontos para trocar por descontos.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-gray-100 p-4 flex items-start gap-3">
+              <span className="text-2xl" aria-hidden>
+                ⭐
+              </span>
+              <div>
+                <p className="font-bold text-sm text-black">Como funciona</p>
+                <p className="text-xs text-gray-500 mt-0.5 leading-snug">
+                  Peça pelo cardápio, acumule pontos e troque por benefícios exclusivos King Food.
+                </p>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-gray-100 p-4 flex items-start gap-3">
+              <span className="text-2xl" aria-hidden>
+                👑
+              </span>
+              <div>
+                <p className="font-bold text-sm text-black">Próximo nível</p>
+                <p className="text-xs text-gray-500 mt-0.5 leading-snug">
+                  Faça pedidos para desbloquear recompensas e surpresas.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={openMenu}
+            className="mt-6 w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition"
+          >
+            Pedir e ganhar pontos →
+          </button>
+        </main>
       ) : (
         <main className="flex-1 flex flex-col items-center justify-center px-6 bg-white min-h-0 overflow-y-auto">
-          <img
-            src={LOGO}
-            alt="King Food"
-            className="w-28 h-28 object-contain mb-4"
-          />
+          <img src={LOGO} alt="King Food" className="w-28 h-28 object-contain mb-4" />
           <h1 className="text-xl font-bold text-gray-900 mb-1">King Food</h1>
           <p className="text-sm text-gray-500 mb-8 text-center">
             Açaí • Delivery • Columbus, OH
@@ -324,27 +414,31 @@ export default function Home() {
       </a>
 
       {/* ========== RODAPÉ ========== */}
-      <nav className="shrink-0 z-30 bg-white border-t border-gray-100 px-6 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <nav className="shrink-0 z-30 bg-white border-t border-gray-100 px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between max-w-md mx-auto">
           <button
             type="button"
             onClick={goHome}
-            className={`flex flex-col items-center gap-0.5 ${
-              !showMenu ? "text-purple-700" : "text-gray-400"
+            className={`flex flex-col items-center gap-0.5 min-w-[56px] ${
+              tab === "home" ? "text-purple-700" : "text-gray-400"
             }`}
           >
-            <span className="text-xl">🏠</span>
+            <span className="text-xl" aria-hidden>
+              🏠
+            </span>
             <span className="text-[10px] font-semibold">Início</span>
           </button>
 
           <button
             type="button"
             onClick={openMenu}
-            className={`flex flex-col items-center gap-0.5 ${
-              showMenu ? "text-purple-700" : "text-gray-400"
+            className={`flex flex-col items-center gap-0.5 min-w-[56px] ${
+              tab === "menu" ? "text-purple-700" : "text-gray-400"
             }`}
           >
-            <span className="text-xl">📋</span>
+            <span className="text-xl" aria-hidden>
+              📋
+            </span>
             <span className="text-[10px] font-semibold">Cardápio</span>
           </button>
 
@@ -352,28 +446,35 @@ export default function Home() {
             type="button"
             onClick={openMenu}
             className="-mt-5 w-14 h-14 rounded-full bg-purple-700 text-white shadow-lg shadow-purple-700/30 flex items-center justify-center text-2xl active:scale-95 transition"
-            aria-label="Pedir"
+            aria-label="Carrinho / Pedir"
           >
             🛒
           </button>
 
-          <a
-            href={WA_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center gap-0.5 text-gray-400"
+          <button
+            type="button"
+            onClick={openOrders}
+            className={`flex flex-col items-center gap-0.5 min-w-[56px] ${
+              tab === "orders" ? "text-purple-700" : "text-gray-400"
+            }`}
           >
-            <span className="text-xl">💬</span>
-            <span className="text-[10px] font-semibold">WhatsApp</span>
-          </a>
+            <span className="text-xl" aria-hidden>
+              🧾
+            </span>
+            <span className="text-[10px] font-semibold">Pedidos</span>
+          </button>
 
           <button
             type="button"
-            onClick={() => setDrawerOpen(true)}
-            className="flex flex-col items-center gap-0.5 text-gray-400"
+            onClick={openRewards}
+            className={`flex flex-col items-center gap-0.5 min-w-[56px] ${
+              tab === "rewards" ? "text-purple-700" : "text-gray-400"
+            }`}
           >
-            <span className="text-xl">☰</span>
-            <span className="text-[10px] font-semibold">Menu</span>
+            <span className="text-xl" aria-hidden>
+              ⭐
+            </span>
+            <span className="text-[10px] font-semibold">Recompensas</span>
           </button>
         </div>
       </nav>
