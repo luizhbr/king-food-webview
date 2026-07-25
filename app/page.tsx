@@ -8,13 +8,28 @@ const GROUP_URL =
   "https://wa.me/12673107535?text=Ol%C3%A1!%20Quero%20entrar%20no%20grupo%20da%20King%20Food";
 const LOGO = "/logo-kingfood.png.png";
 
-type Tab = "home" | "menu" | "orders" | "rewards";
+type Tab =
+  | "home"
+  | "menu"
+  | "orders"
+  | "rewards"
+  | "profile"
+  | "addresses"
+  | "rate";
 
-const SIDE_LINKS = [
-  { label: "Cardápio completo", action: "menu" as const },
+type SideAction = "profile" | "addresses" | "rate" | "hours";
+
+const SIDE_LINKS: {
+  label: string;
+  action?: SideAction;
+  href?: string;
+}[] = [
+  { label: "Meus dados", action: "profile" },
+  { label: "Meus endereços", action: "addresses" },
+  { label: "Avaliar pedido", action: "rate" },
   { label: "Entrar no grupo", href: GROUP_URL },
   { label: "Instagram", href: "https://instagram.com/king.food_delivery" },
-  { label: "Horários e entrega", action: "menu" as const },
+  { label: "Horários e entrega", action: "hours" },
   { label: "Fale conosco", href: WA_URL },
 ];
 
@@ -45,6 +60,24 @@ export default function Home() {
   const [canInstall, setCanInstall] = useState(false);
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
 
+  // Perfil (local)
+  const [profileName, setProfileName] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profileSaved, setProfileSaved] = useState(false);
+  const pointsBalance = 0;
+
+  // Endereços (local)
+  const [addresses, setAddresses] = useState<
+    { id: string; label: string; line: string }[]
+  >([]);
+  const [newAddress, setNewAddress] = useState("");
+
+  // Avaliar pedido
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [ratingSent, setRatingSent] = useState(false);
+
   useEffect(() => {
     const logoTimer = setTimeout(() => setShowLogo(true), 100);
     const safetyTimer = setTimeout(() => setLoading(false), 1800);
@@ -60,6 +93,22 @@ export default function Home() {
       document.body.style.overflow = "";
     };
   }, [drawerOpen]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("kf_profile");
+      if (saved) {
+        const p = JSON.parse(saved);
+        setProfileName(p.name || "");
+        setProfilePhone(p.phone || "");
+        setProfileEmail(p.email || "");
+      }
+      const addr = localStorage.getItem("kf_addresses");
+      if (addr) setAddresses(JSON.parse(addr));
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     const isStandalone =
@@ -122,10 +171,55 @@ export default function Home() {
     setTab("rewards");
   };
 
+  const saveProfile = () => {
+    const data = { name: profileName, phone: profilePhone, email: profileEmail };
+    localStorage.setItem("kf_profile", JSON.stringify(data));
+    setProfileSaved(true);
+    setTimeout(() => setProfileSaved(false), 2000);
+  };
+
+  const addAddress = () => {
+    const line = newAddress.trim();
+    if (!line) return;
+    const next = [
+      ...addresses,
+      { id: String(Date.now()), label: "Endereço", line },
+    ];
+    setAddresses(next);
+    localStorage.setItem("kf_addresses", JSON.stringify(next));
+    setNewAddress("");
+  };
+
+  const removeAddress = (id: string) => {
+    const next = addresses.filter((a) => a.id !== id);
+    setAddresses(next);
+    localStorage.setItem("kf_addresses", JSON.stringify(next));
+  };
+
+  const submitRating = () => {
+    if (rating < 1) return;
+    setRatingSent(true);
+  };
+
   const handleSideLink = (link: (typeof SIDE_LINKS)[0]) => {
     setDrawerOpen(false);
-    if (link.action === "menu") {
-      openMenu();
+    if (link.action === "profile") {
+      setTab("profile");
+      return;
+    }
+    if (link.action === "addresses") {
+      setTab("addresses");
+      return;
+    }
+    if (link.action === "rate") {
+      setRating(0);
+      setComment("");
+      setRatingSent(false);
+      setTab("rate");
+      return;
+    }
+    if (link.action === "hours") {
+      setTab("orders"); // horários: info simples via pedidos/contato por enquanto
       return;
     }
     if (link.href) {
@@ -140,7 +234,13 @@ export default function Home() {
         ? "Pedidos"
         : tab === "rewards"
           ? "Recompensas"
-          : "Açaí • Delivery";
+          : tab === "profile"
+            ? "Meus dados"
+            : tab === "addresses"
+              ? "Endereços"
+              : tab === "rate"
+                ? "Avaliar"
+                : "Açaí • Delivery";
 
   if (loading) {
     return (
@@ -165,7 +265,6 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
-      {/* ========== BARRA PRETA ========== */}
       <header className="shrink-0 z-40 bg-black text-white">
         <div className="flex items-center justify-between px-3 py-2.5">
           <div className="flex items-center gap-2">
@@ -201,7 +300,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ========== DRAWER ========== */}
       <div
         className={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 ${
           drawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -252,7 +350,6 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* ========== CONTEÚDO ========== */}
       {tab === "menu" ? (
         <div className="flex-1 relative min-h-0 bg-white">
           {!iframeReady && (
@@ -275,7 +372,6 @@ export default function Home() {
       ) : tab === "orders" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
           <h2 className="text-lg font-extrabold text-black mb-4">Pedidos</h2>
-
           <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 mb-5">
             <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">
               Em andamento
@@ -285,7 +381,6 @@ export default function Home() {
               Quando você fizer um pedido, o status aparece aqui.
             </p>
           </div>
-
           <h3 className="text-sm font-bold text-gray-900 mb-3">Histórico</h3>
           <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center">
             <span className="text-3xl" aria-hidden>
@@ -303,7 +398,6 @@ export default function Home() {
               Ver cardápio
             </button>
           </div>
-
           <a
             href={WA_URL}
             target="_blank"
@@ -316,49 +410,204 @@ export default function Home() {
       ) : tab === "rewards" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
           <h2 className="text-lg font-extrabold text-black mb-4">Recompensas</h2>
-
           <div className="rounded-2xl bg-gradient-to-r from-purple-700 to-purple-500 text-white p-5 mb-5">
             <p className="text-xs font-bold uppercase tracking-wider text-white/80">
               Ganhe pontos e recompensas!
             </p>
-            <p className="text-3xl font-extrabold mt-2">0 pts</p>
+            <p className="text-3xl font-extrabold mt-2">{pointsBalance} pts</p>
             <p className="text-sm text-white/80 mt-1">
               A cada pedido você acumula pontos para trocar por descontos.
             </p>
           </div>
+          <button
+            type="button"
+            onClick={openMenu}
+            className="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition"
+          >
+            Pedir e ganhar pontos →
+          </button>
+        </main>
+      ) : tab === "profile" ? (
+        <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
+          <h2 className="text-lg font-extrabold text-black mb-4">Meus dados</h2>
+
+          <button
+            type="button"
+            onClick={openRewards}
+            className="w-full text-left rounded-2xl bg-gradient-to-r from-purple-700 to-purple-500 text-white p-4 mb-5 active:scale-[0.99] transition"
+          >
+            <p className="text-xs font-bold uppercase tracking-wide text-white/80">
+              Saldo de pontos
+            </p>
+            <p className="text-2xl font-extrabold mt-1">{pointsBalance} pts</p>
+            <p className="text-xs text-white/70 mt-1">Ver recompensas →</p>
+          </button>
 
           <div className="space-y-3">
-            <div className="rounded-2xl border border-gray-100 p-4 flex items-start gap-3">
-              <span className="text-2xl" aria-hidden>
-                ⭐
-              </span>
-              <div>
-                <p className="font-bold text-sm text-black">Como funciona</p>
-                <p className="text-xs text-gray-500 mt-0.5 leading-snug">
-                  Peça pelo cardápio, acumule pontos e troque por benefícios exclusivos King Food.
-                </p>
-              </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500" htmlFor="name">
+                Nome
+              </label>
+              <input
+                id="name"
+                type="text"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder="Seu nome"
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500"
+              />
             </div>
-            <div className="rounded-2xl border border-gray-100 p-4 flex items-start gap-3">
-              <span className="text-2xl" aria-hidden>
-                👑
-              </span>
-              <div>
-                <p className="font-bold text-sm text-black">Próximo nível</p>
-                <p className="text-xs text-gray-500 mt-0.5 leading-snug">
-                  Faça pedidos para desbloquear recompensas e surpresas.
-                </p>
-              </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500" htmlFor="phone">
+                Telefone
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                value={profilePhone}
+                onChange={(e) => setProfilePhone(e.target.value)}
+                placeholder="(000) 000-0000"
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500" htmlFor="email">
+                E-mail
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={profileEmail}
+                onChange={(e) => setProfileEmail(e.target.value)}
+                placeholder="seu@email.com"
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500"
+              />
             </div>
           </div>
 
           <button
             type="button"
-            onClick={openMenu}
-            className="mt-6 w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition"
+            onClick={saveProfile}
+            className="mt-6 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition"
           >
-            Pedir e ganhar pontos →
+            {profileSaved ? "Salvo ✓" : "Salvar dados"}
           </button>
+        </main>
+      ) : tab === "addresses" ? (
+        <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
+          <h2 className="text-lg font-extrabold text-black mb-4">Meus endereços</h2>
+
+          {addresses.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center mb-5">
+              <p className="text-sm text-gray-600">Nenhum endereço salvo</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Cadastre para agilizar o próximo pedido.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-2 mb-5">
+              {addresses.map((a) => (
+                <li
+                  key={a.id}
+                  className="rounded-2xl border border-gray-100 p-4 flex items-start justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-gray-400 uppercase">{a.label}</p>
+                    <p className="text-sm text-gray-800 mt-0.5 break-words">{a.line}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeAddress(a.id)}
+                    className="text-xs font-semibold text-red-600 shrink-0"
+                  >
+                    Remover
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <label className="text-xs font-semibold text-gray-500" htmlFor="addr">
+            Novo endereço
+          </label>
+          <textarea
+            id="addr"
+            value={newAddress}
+            onChange={(e) => setNewAddress(e.target.value)}
+            placeholder="Rua, número, apto, cidade, ZIP"
+            rows={3}
+            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500 resize-none"
+          />
+          <button
+            type="button"
+            onClick={addAddress}
+            className="mt-3 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition"
+          >
+            Salvar endereço
+          </button>
+        </main>
+      ) : tab === "rate" ? (
+        <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
+          <h2 className="text-lg font-extrabold text-black mb-2">Avaliar pedido</h2>
+          <p className="text-sm text-gray-500 mb-6">
+            Como foi sua última experiência com a King Food?
+          </p>
+
+          {ratingSent ? (
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-6 text-center">
+              <p className="text-2xl" aria-hidden>
+                🙏
+              </p>
+              <p className="text-sm font-bold text-gray-900 mt-2">Obrigado pelo feedback!</p>
+              <p className="text-xs text-gray-500 mt-1">Sua opinião nos ajuda a melhorar.</p>
+              <button
+                type="button"
+                onClick={goHome}
+                className="mt-4 text-sm font-semibold text-purple-700"
+              >
+                Voltar ao início
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-center gap-2 mb-6">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setRating(n)}
+                    className={`w-11 h-11 rounded-full text-xl transition ${
+                      n <= rating ? "text-[#FFD100] scale-110" : "text-gray-300"
+                    }`}
+                    aria-label={`${n} estrela${n > 1 ? "s" : ""}`}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+
+              <label className="text-xs font-semibold text-gray-500" htmlFor="comment">
+                Comentário (opcional)
+              </label>
+              <textarea
+                id="comment"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Conte como foi o pedido..."
+                rows={4}
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500 resize-none"
+              />
+
+              <button
+                type="button"
+                onClick={submitRating}
+                disabled={rating < 1}
+                className="mt-4 w-full bg-purple-700 disabled:bg-gray-300 disabled:text-gray-500 text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition"
+              >
+                Enviar avaliação
+              </button>
+            </>
+          )}
         </main>
       ) : (
         <main className="flex-1 flex flex-col items-center justify-center px-6 bg-white min-h-0 overflow-y-auto">
@@ -402,7 +651,6 @@ export default function Home() {
         </main>
       )}
 
-      {/* ========== BOTÃO FLUTUANTE WHATSAPP ========== */}
       <a
         href={WA_URL}
         target="_blank"
@@ -413,7 +661,6 @@ export default function Home() {
         <WhatsAppIcon className="w-7 h-7" />
       </a>
 
-      {/* ========== RODAPÉ ========== */}
       <nav className="shrink-0 z-30 bg-white border-t border-gray-100 px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between max-w-md mx-auto">
           <button
