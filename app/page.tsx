@@ -10,29 +10,24 @@ const MAPS_URL = "https://maps.app.goo.gl/GR2gpipSMqZdH9Xy5";
 const LOGO = "/logo-kingfood.png.png";
 const INSTALL_DISMISS_KEY = "kf_install_dismissed";
 
-type Tab =
-  | "home"
-  | "menu"
-  | "orders"
-  | "rewards"
-  | "profile"
-  | "addresses"
-  | "rate";
+type Tab = "home" | "menu" | "orders" | "rewards" | "hours";
 
-type SideAction = "profile" | "addresses" | "rate" | "hours";
-
-const SIDE_LINKS: {
-  label: string;
-  action?: SideAction;
-  href?: string;
-}[] = [
-  { label: "Meus dados", action: "profile" },
-  { label: "Meus endereços", action: "addresses" },
-  { label: "Avaliar pedido", action: "rate" },
+const SIDE_LINKS: { label: string; action?: "hours"; href?: string }[] = [
   { label: "Entrar no grupo", href: GROUP_URL },
   { label: "Instagram", href: "https://instagram.com/king.food_delivery" },
   { label: "Horários e entrega", action: "hours" },
   { label: "Fale conosco", href: WA_URL },
+];
+
+/** day: 0 = Domingo … 6 = Sábado (Date.getDay()) */
+const HOURS = [
+  { day: 0, label: "Domingo", hours: "6:00 PM – 10:30 PM" },
+  { day: 1, label: "Segunda-feira", hours: "7:00 PM – 10:00 PM" },
+  { day: 2, label: "Terça-feira", hours: "7:00 PM – 10:30 PM" },
+  { day: 3, label: "Quarta-feira", hours: "7:00 PM – 10:00 PM" },
+  { day: 4, label: "Quinta-feira", hours: "7:00 PM – 10:00 PM" },
+  { day: 5, label: "Sexta-feira", hours: "Fechado" },
+  { day: 6, label: "Sábado", hours: "9:00 PM – 11:00 PM" },
 ];
 
 const HOME_REVIEWS = [
@@ -118,29 +113,15 @@ export default function Home() {
   const [showInstallModal, setShowInstallModal] = useState(false);
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
   const loadingDone = useRef(false);
-
-  const [profileName, setProfileName] = useState("");
-  const [profilePhone, setProfilePhone] = useState("");
-  const [profileEmail, setProfileEmail] = useState("");
-  const [profileSaved, setProfileSaved] = useState(false);
   const pointsBalance = 0;
-
-  const [addresses, setAddresses] = useState<{ id: string; label: string; line: string }[]>([]);
-  const [newAddress, setNewAddress] = useState("");
-
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [ratingSent, setRatingSent] = useState(false);
+  const today = new Date().getDay();
 
   const tryShowModal = useCallback(() => {
     const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
     if (dismissed) return;
     if (!deferredPrompt.current && !window.__kfDeferredPrompt) return;
     setCanInstall(true);
-    // Só mostra o modal depois do splash para o usuário ver a marca
-    if (loadingDone.current) {
-      setShowInstallModal(true);
-    }
+    if (loadingDone.current) setShowInstallModal(true);
   }, []);
 
   useEffect(() => {
@@ -148,7 +129,6 @@ export default function Home() {
     const safetyTimer = setTimeout(() => {
       loadingDone.current = true;
       setLoading(false);
-      // Se o prompt já chegou durante o splash, abrir modal agora
       const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
       if (!dismissed && (deferredPrompt.current || window.__kfDeferredPrompt)) {
         setCanInstall(true);
@@ -169,22 +149,6 @@ export default function Home() {
   }, [drawerOpen, showInstallModal]);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("kf_profile");
-      if (saved) {
-        const p = JSON.parse(saved);
-        setProfileName(p.name || "");
-        setProfilePhone(p.phone || "");
-        setProfileEmail(p.email || "");
-      }
-      const addr = localStorage.getItem("kf_addresses");
-      if (addr) setAddresses(JSON.parse(addr));
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       // @ts-expect-error iOS Safari
@@ -197,8 +161,6 @@ export default function Home() {
 
     const adoptPrompt = (evt: BeforeInstallPromptEvent | null | undefined) => {
       if (!evt) return;
-      // preventDefault já deve ter sido chamado no script early;
-      // reforçamos aqui se o evento ainda estiver vivo
       try {
         evt.preventDefault();
       } catch {
@@ -208,18 +170,15 @@ export default function Home() {
       window.__kfDeferredPrompt = evt;
       setCanInstall(true);
       tryShowModal();
-      console.log("[King Food PWA] deferredPrompt guardado — modal customizado");
     };
 
     adoptPrompt(window.__kfDeferredPrompt ?? null);
 
     const onKfBip = () => adoptPrompt(window.__kfDeferredPrompt ?? null);
-
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
       adoptPrompt(e as BeforeInstallPromptEvent);
     };
-
     const onInstalled = () => {
       window.__kfDeferredPrompt = null;
       deferredPrompt.current = null;
@@ -230,11 +189,9 @@ export default function Home() {
     window.addEventListener("kf-beforeinstallprompt", onKfBip);
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
     window.addEventListener("appinstalled", onInstalled);
-
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
-
     return () => {
       window.removeEventListener("kf-beforeinstallprompt", onKfBip);
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
@@ -242,12 +199,10 @@ export default function Home() {
     };
   }, [tryShowModal]);
 
-  /** Só aqui o diálogo NATIVO do navegador é aberto — depois do modal da marca. */
   const handleInstall = async () => {
     const promptEvent =
       deferredPrompt.current || (window.__kfDeferredPrompt as BeforeInstallPromptEvent | null);
     if (!promptEvent) {
-      console.warn("[King Food PWA] nenhum deferred prompt disponível");
       setShowInstallModal(false);
       return;
     }
@@ -255,14 +210,13 @@ export default function Home() {
     try {
       await promptEvent.prompt();
       const { outcome } = await promptEvent.userChoice;
-      console.log("[King Food PWA] userChoice", outcome);
       if (outcome === "accepted") {
         deferredPrompt.current = null;
         window.__kfDeferredPrompt = null;
         setCanInstall(false);
       }
-    } catch (err) {
-      console.warn("[King Food PWA] prompt() erro", err);
+    } catch {
+      /* ignore */
     }
   };
 
@@ -292,54 +246,10 @@ export default function Home() {
     setTab("rewards");
   };
 
-  const saveProfile = () => {
-    localStorage.setItem(
-      "kf_profile",
-      JSON.stringify({ name: profileName, phone: profilePhone, email: profileEmail })
-    );
-    setProfileSaved(true);
-    setTimeout(() => setProfileSaved(false), 2000);
-  };
-
-  const addAddress = () => {
-    const line = newAddress.trim();
-    if (!line) return;
-    const next = [...addresses, { id: String(Date.now()), label: "Endereço", line }];
-    setAddresses(next);
-    localStorage.setItem("kf_addresses", JSON.stringify(next));
-    setNewAddress("");
-  };
-
-  const removeAddress = (id: string) => {
-    const next = addresses.filter((a) => a.id !== id);
-    setAddresses(next);
-    localStorage.setItem("kf_addresses", JSON.stringify(next));
-  };
-
-  const submitRating = () => {
-    if (rating < 1) return;
-    setRatingSent(true);
-  };
-
   const handleSideLink = (link: (typeof SIDE_LINKS)[0]) => {
     setDrawerOpen(false);
-    if (link.action === "profile") {
-      setTab("profile");
-      return;
-    }
-    if (link.action === "addresses") {
-      setTab("addresses");
-      return;
-    }
-    if (link.action === "rate") {
-      setRating(0);
-      setComment("");
-      setRatingSent(false);
-      setTab("rate");
-      return;
-    }
     if (link.action === "hours") {
-      window.open(MAPS_URL, "_blank", "noopener,noreferrer");
+      setTab("hours");
       return;
     }
     if (link.href) window.open(link.href, "_blank", "noopener,noreferrer");
@@ -352,13 +262,9 @@ export default function Home() {
         ? "Pedidos"
         : tab === "rewards"
           ? "Recompensas"
-          : tab === "profile"
-            ? "Meus dados"
-            : tab === "addresses"
-              ? "Endereços"
-              : tab === "rate"
-                ? "Avaliar"
-                : "Açaí • Delivery";
+          : tab === "hours"
+            ? "Horários"
+            : "Açaí • Delivery";
 
   if (loading) {
     return (
@@ -513,109 +419,62 @@ export default function Home() {
             Pedir e ganhar pontos →
           </button>
         </main>
-      ) : tab === "profile" ? (
+      ) : tab === "hours" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
-          <h2 className="text-lg font-extrabold text-black mb-4">Meus dados</h2>
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={profileName}
-              onChange={(e) => setProfileName(e.target.value)}
-              placeholder="Nome"
-              className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm"
-            />
-            <input
-              type="tel"
-              value={profilePhone}
-              onChange={(e) => setProfilePhone(e.target.value)}
-              placeholder="Telefone"
-              className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm"
-            />
-            <input
-              type="email"
-              value={profileEmail}
-              onChange={(e) => setProfileEmail(e.target.value)}
-              placeholder="E-mail"
-              className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm"
-            />
+          <div className="flex items-center gap-2 mb-5">
+            <span className="text-2xl" aria-hidden>
+              🕐
+            </span>
+            <h2 className="text-lg font-extrabold text-black">Horários e entrega</h2>
           </div>
-          <button
-            type="button"
-            onClick={saveProfile}
-            className="mt-6 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm"
-          >
-            {profileSaved ? "Salvo ✓" : "Salvar dados"}
-          </button>
-        </main>
-      ) : tab === "addresses" ? (
-        <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
-          <h2 className="text-lg font-extrabold text-black mb-4">Meus endereços</h2>
-          {addresses.map((a) => (
-            <div
-              key={a.id}
-              className="rounded-2xl border border-gray-100 p-4 mb-2 flex justify-between gap-3"
-            >
-              <p className="text-sm">{a.line}</p>
-              <button
-                type="button"
-                onClick={() => removeAddress(a.id)}
-                className="text-xs text-red-600"
-              >
-                Remover
-              </button>
-            </div>
-          ))}
-          <textarea
-            value={newAddress}
-            onChange={(e) => setNewAddress(e.target.value)}
-            placeholder="Novo endereço"
-            rows={3}
-            className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm resize-none"
-          />
-          <button
-            type="button"
-            onClick={addAddress}
-            className="mt-3 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm"
-          >
-            Salvar endereço
-          </button>
-        </main>
-      ) : tab === "rate" ? (
-        <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
-          <h2 className="text-lg font-extrabold text-black mb-2">Avaliar pedido</h2>
-          {ratingSent ? (
-            <p className="text-sm font-bold">Obrigado!</p>
-          ) : (
-            <>
-              <div className="flex justify-center gap-2 mb-6">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setRating(n)}
-                    className={`w-11 h-11 text-xl ${n <= rating ? "text-[#FFD100]" : "text-gray-300"}`}
+
+          <ul className="rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-50">
+            {HOURS.map((row) => {
+              const isToday = row.day === today;
+              const closed = row.hours === "Fechado";
+              return (
+                <li
+                  key={row.day}
+                  className={`flex items-center justify-between gap-3 px-4 py-3.5 ${
+                    isToday ? "bg-blue-50" : "bg-white"
+                  }`}
+                >
+                  <span
+                    className={`text-sm ${
+                      isToday ? "font-bold text-blue-700" : "font-medium text-gray-800"
+                    }`}
                   >
-                    ★
-                  </button>
-                ))}
-              </div>
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Comentário"
-                rows={4}
-                className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm resize-none"
-              />
-              <button
-                type="button"
-                onClick={submitRating}
-                disabled={rating < 1}
-                className="mt-4 w-full bg-purple-700 disabled:bg-gray-300 text-white font-bold py-3.5 rounded-2xl text-sm"
-              >
-                Enviar
-              </button>
-            </>
-          )}
+                    {row.label}
+                    {isToday ? " · hoje" : ""}
+                  </span>
+                  <span
+                    className={`text-sm tabular-nums ${
+                      isToday
+                        ? "font-bold text-blue-700"
+                        : closed
+                          ? "text-gray-400"
+                          : "text-gray-600"
+                    }`}
+                  >
+                    {row.hours}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="mt-5 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+            <p className="text-sm font-bold text-gray-900">Entrega</p>
+            <p className="text-sm text-gray-600 mt-1">Em até 40 min • Columbus, OH</p>
+            <a
+              href={MAPS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex text-sm font-semibold text-purple-700"
+            >
+              Ver no Google Maps →
+            </a>
+          </div>
         </main>
       ) : (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-6">
