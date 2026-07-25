@@ -42,7 +42,7 @@ export default function Home() {
               }`}
           >
             <img
-              src="/logo-kingfood.png"
+              src="/logo-kingfood.png.png"
               alt="King Food"
               className="w-48 h-48 object-contain drop-shadow-md"
             />
@@ -69,7 +69,7 @@ export default function Home() {
       <header className="flex items-center justify-between px-4 py-3 bg-black text-white shadow-md z-20 border-b border-gray-800">
         <div className="flex items-center gap-3">
           <img
-            src="/logo-kingfood.png"
+            src="/logo-kingfood.png.png"
             alt="King Food"
             className="w-10 h-10 object-contain rounded-md"
           />
