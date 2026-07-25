@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 const MENU_URL = "https://kingfood.fe-v2.ola.click/products";
 const WA_URL = "https://wa.me/12673107535";
@@ -60,6 +60,54 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
+function InstallModal({
+  open,
+  onInstall,
+  onDismiss,
+}: {
+  open: boolean;
+  onInstall: () => void;
+  onDismiss: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-5">
+      <div className="absolute inset-0 bg-black/60" onClick={onDismiss} aria-hidden />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="install-title"
+        className="relative z-10 w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl text-center"
+      >
+        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFD100]">
+          <img src={LOGO} alt="" className="h-12 w-12 object-contain" />
+        </div>
+        <h2 id="install-title" className="text-lg font-extrabold text-gray-900">
+          Instale nosso app 📲
+        </h2>
+        <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+          Peça mais rápido, acompanhe seus pedidos e acumule pontos direto na tela inicial do seu
+          celular.
+        </p>
+        <button
+          type="button"
+          onClick={onInstall}
+          className="mt-5 w-full rounded-2xl bg-purple-700 py-3.5 text-sm font-bold text-white active:scale-[0.99] transition"
+        >
+          Instalar agora
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="mt-2 w-full py-2.5 text-sm font-medium text-gray-500 hover:text-gray-800"
+        >
+          Agora não
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLogo, setShowLogo] = useState(false);
@@ -69,6 +117,7 @@ export default function Home() {
   const [canInstall, setCanInstall] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
+  const loadingDone = useRef(false);
 
   const [profileName, setProfileName] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
@@ -83,9 +132,29 @@ export default function Home() {
   const [comment, setComment] = useState("");
   const [ratingSent, setRatingSent] = useState(false);
 
+  const tryShowModal = useCallback(() => {
+    const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
+    if (dismissed) return;
+    if (!deferredPrompt.current && !window.__kfDeferredPrompt) return;
+    setCanInstall(true);
+    // Só mostra o modal depois do splash para o usuário ver a marca
+    if (loadingDone.current) {
+      setShowInstallModal(true);
+    }
+  }, []);
+
   useEffect(() => {
     const logoTimer = setTimeout(() => setShowLogo(true), 100);
-    const safetyTimer = setTimeout(() => setLoading(false), 1800);
+    const safetyTimer = setTimeout(() => {
+      loadingDone.current = true;
+      setLoading(false);
+      // Se o prompt já chegou durante o splash, abrir modal agora
+      const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
+      if (!dismissed && (deferredPrompt.current || window.__kfDeferredPrompt)) {
+        setCanInstall(true);
+        setShowInstallModal(true);
+      }
+    }, 1800);
     return () => {
       clearTimeout(logoTimer);
       clearTimeout(safetyTimer);
@@ -126,28 +195,29 @@ export default function Home() {
       return;
     }
 
-    const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
-
     const adoptPrompt = (evt: BeforeInstallPromptEvent | null | undefined) => {
       if (!evt) return;
+      // preventDefault já deve ter sido chamado no script early;
+      // reforçamos aqui se o evento ainda estiver vivo
+      try {
+        evt.preventDefault();
+      } catch {
+        /* already prevented */
+      }
       deferredPrompt.current = evt;
+      window.__kfDeferredPrompt = evt;
       setCanInstall(true);
-      if (!dismissed) setShowInstallModal(true);
-      console.log("[King Food PWA] prompt adotado pelo React");
+      tryShowModal();
+      console.log("[King Food PWA] deferredPrompt guardado — modal customizado");
     };
 
-    // Prompt capturado pelo script early no <head>
     adoptPrompt(window.__kfDeferredPrompt ?? null);
 
-    const onKfBip = () => {
-      adoptPrompt(window.__kfDeferredPrompt ?? null);
-    };
+    const onKfBip = () => adoptPrompt(window.__kfDeferredPrompt ?? null);
 
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
-      const bip = e as BeforeInstallPromptEvent;
-      window.__kfDeferredPrompt = bip;
-      adoptPrompt(bip);
+      adoptPrompt(e as BeforeInstallPromptEvent);
     };
 
     const onInstalled = () => {
@@ -161,7 +231,6 @@ export default function Home() {
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
     window.addEventListener("appinstalled", onInstalled);
 
-    // Re-registrar SW se ainda não estiver (fallback)
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
@@ -171,23 +240,29 @@ export default function Home() {
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
       window.removeEventListener("appinstalled", onInstalled);
     };
-  }, []);
+  }, [tryShowModal]);
 
+  /** Só aqui o diálogo NATIVO do navegador é aberto — depois do modal da marca. */
   const handleInstall = async () => {
     const promptEvent =
       deferredPrompt.current || (window.__kfDeferredPrompt as BeforeInstallPromptEvent | null);
     if (!promptEvent) {
       console.warn("[King Food PWA] nenhum deferred prompt disponível");
+      setShowInstallModal(false);
       return;
     }
     setShowInstallModal(false);
-    await promptEvent.prompt();
-    const { outcome } = await promptEvent.userChoice;
-    console.log("[King Food PWA] userChoice", outcome);
-    if (outcome === "accepted") {
-      deferredPrompt.current = null;
-      window.__kfDeferredPrompt = null;
-      setCanInstall(false);
+    try {
+      await promptEvent.prompt();
+      const { outcome } = await promptEvent.userChoice;
+      console.log("[King Food PWA] userChoice", outcome);
+      if (outcome === "accepted") {
+        deferredPrompt.current = null;
+        window.__kfDeferredPrompt = null;
+        setCanInstall(false);
+      }
+    } catch (err) {
+      console.warn("[King Food PWA] prompt() erro", err);
     }
   };
 
@@ -287,18 +362,25 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#FFD100]">
-        <div
-          className={`flex flex-col items-center transition-all duration-700 ease-out ${
-            showLogo ? "opacity-100 scale-100" : "opacity-0 scale-90"
-          }`}
-        >
-          <img src={LOGO} alt="King Food" className="w-44 h-44 object-contain drop-shadow-md" />
+      <>
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#FFD100]">
+          <div
+            className={`flex flex-col items-center transition-all duration-700 ease-out ${
+              showLogo ? "opacity-100 scale-100" : "opacity-0 scale-90"
+            }`}
+          >
+            <img src={LOGO} alt="King Food" className="w-44 h-44 object-contain drop-shadow-md" />
+          </div>
+          <div
+            className={`mt-8 transition-opacity duration-500 delay-300 ${
+              showLogo ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
+          </div>
         </div>
-        <div className={`mt-8 transition-opacity duration-500 delay-300 ${showLogo ? "opacity-100" : "opacity-0"}`}>
-          <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
-        </div>
-      </div>
+        <InstallModal open={showInstallModal} onInstall={handleInstall} onDismiss={dismissInstallModal} />
+      </>
     );
   }
 
@@ -307,7 +389,12 @@ export default function Home() {
       <header className="shrink-0 z-40 bg-black text-white">
         <div className="flex items-center justify-between px-3 py-2.5">
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setDrawerOpen(true)} className="w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-lg hover:bg-white/10 transition" aria-label="Abrir menu">
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              className="w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-lg hover:bg-white/10 transition"
+              aria-label="Abrir menu"
+            >
               <span className="block w-5 h-0.5 bg-white rounded" />
               <span className="block w-5 h-0.5 bg-white rounded" />
               <span className="block w-5 h-0.5 bg-white rounded" />
@@ -321,14 +408,29 @@ export default function Home() {
             </button>
           </div>
           {tab !== "home" && (
-            <button type="button" onClick={goHome} className="text-xs font-semibold text-white/80 px-2 py-1.5 rounded-lg hover:bg-white/10">← Início</button>
+            <button
+              type="button"
+              onClick={goHome}
+              className="text-xs font-semibold text-white/80 px-2 py-1.5 rounded-lg hover:bg-white/10"
+            >
+              ← Início
+            </button>
           )}
         </div>
       </header>
 
-      <div className={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 ${drawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`} onClick={() => setDrawerOpen(false)} />
+      <div
+        className={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 ${
+          drawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setDrawerOpen(false)}
+      />
 
-      <aside className={`fixed top-0 left-0 z-50 h-full w-[80%] max-w-xs bg-white shadow-2xl transition-transform duration-300 ease-out ${drawerOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside
+        className={`fixed top-0 left-0 z-50 h-full w-[80%] max-w-xs bg-white shadow-2xl transition-transform duration-300 ease-out ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         <div className="bg-black text-white px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={LOGO} alt="King Food" className="w-10 h-10 object-contain rounded-md" />
@@ -337,11 +439,25 @@ export default function Home() {
               <p className="text-xs text-white/60">Menu</p>
             </div>
           </div>
-          <button type="button" onClick={() => setDrawerOpen(false)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-lg" aria-label="Fechar">✕</button>
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(false)}
+            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-lg"
+            aria-label="Fechar"
+          >
+            ✕
+          </button>
         </div>
         <nav className="py-2">
           {SIDE_LINKS.map((link) => (
-            <button key={link.label} type="button" onClick={() => handleSideLink(link)} className="w-full text-left px-5 py-3.5 text-sm font-medium text-gray-800 hover:bg-purple-50 hover:text-purple-700 border-b border-gray-50 transition">{link.label}</button>
+            <button
+              key={link.label}
+              type="button"
+              onClick={() => handleSideLink(link)}
+              className="w-full text-left px-5 py-3.5 text-sm font-medium text-gray-800 hover:bg-purple-50 hover:text-purple-700 border-b border-gray-50 transition"
+            >
+              {link.label}
+            </button>
           ))}
         </nav>
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
@@ -355,10 +471,18 @@ export default function Home() {
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-white px-6">
               <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-gray-500">Carregando cardápio...</p>
-              <a href={MENU_URL} className="text-sm font-semibold text-purple-700 underline">Abrir em nova aba</a>
+              <a href={MENU_URL} className="text-sm font-semibold text-purple-700 underline">
+                Abrir em nova aba
+              </a>
             </div>
           )}
-          <iframe src={MENU_URL} className="absolute inset-0 w-full h-full border-0" title="Cardápio King Food" allow="payment" onLoad={() => setIframeReady(true)} />
+          <iframe
+            src={MENU_URL}
+            className="absolute inset-0 w-full h-full border-0"
+            title="Cardápio King Food"
+            allow="payment"
+            onLoad={() => setIframeReady(true)}
+          />
         </div>
       ) : tab === "orders" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
@@ -367,7 +491,13 @@ export default function Home() {
             <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Em andamento</p>
             <p className="text-sm font-semibold text-gray-800">Nenhum pedido em andamento</p>
           </div>
-          <button type="button" onClick={openMenu} className="inline-flex bg-purple-700 text-white text-sm font-bold px-4 py-2.5 rounded-full">Ver cardápio</button>
+          <button
+            type="button"
+            onClick={openMenu}
+            className="inline-flex bg-purple-700 text-white text-sm font-bold px-4 py-2.5 rounded-full"
+          >
+            Ver cardápio
+          </button>
         </main>
       ) : tab === "rewards" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
@@ -375,29 +505,80 @@ export default function Home() {
           <div className="rounded-2xl bg-gradient-to-r from-purple-700 to-purple-500 text-white p-5 mb-5">
             <p className="text-3xl font-extrabold">{pointsBalance} pts</p>
           </div>
-          <button type="button" onClick={openMenu} className="w-full bg-purple-700 text-white font-bold py-3.5 rounded-2xl text-sm">Pedir e ganhar pontos →</button>
+          <button
+            type="button"
+            onClick={openMenu}
+            className="w-full bg-purple-700 text-white font-bold py-3.5 rounded-2xl text-sm"
+          >
+            Pedir e ganhar pontos →
+          </button>
         </main>
       ) : tab === "profile" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
           <h2 className="text-lg font-extrabold text-black mb-4">Meus dados</h2>
           <div className="space-y-3">
-            <input type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Nome" className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm" />
-            <input type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} placeholder="Telefone" className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm" />
-            <input type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} placeholder="E-mail" className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm" />
+            <input
+              type="text"
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+              placeholder="Nome"
+              className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm"
+            />
+            <input
+              type="tel"
+              value={profilePhone}
+              onChange={(e) => setProfilePhone(e.target.value)}
+              placeholder="Telefone"
+              className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm"
+            />
+            <input
+              type="email"
+              value={profileEmail}
+              onChange={(e) => setProfileEmail(e.target.value)}
+              placeholder="E-mail"
+              className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm"
+            />
           </div>
-          <button type="button" onClick={saveProfile} className="mt-6 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm">{profileSaved ? "Salvo ✓" : "Salvar dados"}</button>
+          <button
+            type="button"
+            onClick={saveProfile}
+            className="mt-6 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm"
+          >
+            {profileSaved ? "Salvo ✓" : "Salvar dados"}
+          </button>
         </main>
       ) : tab === "addresses" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
           <h2 className="text-lg font-extrabold text-black mb-4">Meus endereços</h2>
           {addresses.map((a) => (
-            <div key={a.id} className="rounded-2xl border border-gray-100 p-4 mb-2 flex justify-between gap-3">
+            <div
+              key={a.id}
+              className="rounded-2xl border border-gray-100 p-4 mb-2 flex justify-between gap-3"
+            >
               <p className="text-sm">{a.line}</p>
-              <button type="button" onClick={() => removeAddress(a.id)} className="text-xs text-red-600">Remover</button>
+              <button
+                type="button"
+                onClick={() => removeAddress(a.id)}
+                className="text-xs text-red-600"
+              >
+                Remover
+              </button>
             </div>
           ))}
-          <textarea value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder="Novo endereço" rows={3} className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm resize-none" />
-          <button type="button" onClick={addAddress} className="mt-3 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm">Salvar endereço</button>
+          <textarea
+            value={newAddress}
+            onChange={(e) => setNewAddress(e.target.value)}
+            placeholder="Novo endereço"
+            rows={3}
+            className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm resize-none"
+          />
+          <button
+            type="button"
+            onClick={addAddress}
+            className="mt-3 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm"
+          >
+            Salvar endereço
+          </button>
         </main>
       ) : tab === "rate" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
@@ -408,11 +589,31 @@ export default function Home() {
             <>
               <div className="flex justify-center gap-2 mb-6">
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <button key={n} type="button" onClick={() => setRating(n)} className={`w-11 h-11 text-xl ${n <= rating ? "text-[#FFD100]" : "text-gray-300"}`}>★</button>
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setRating(n)}
+                    className={`w-11 h-11 text-xl ${n <= rating ? "text-[#FFD100]" : "text-gray-300"}`}
+                  >
+                    ★
+                  </button>
                 ))}
               </div>
-              <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Comentário" rows={4} className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm resize-none" />
-              <button type="button" onClick={submitRating} disabled={rating < 1} className="mt-4 w-full bg-purple-700 disabled:bg-gray-300 text-white font-bold py-3.5 rounded-2xl text-sm">Enviar</button>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Comentário"
+                rows={4}
+                className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm resize-none"
+              />
+              <button
+                type="button"
+                onClick={submitRating}
+                disabled={rating < 1}
+                className="mt-4 w-full bg-purple-700 disabled:bg-gray-300 text-white font-bold py-3.5 rounded-2xl text-sm"
+              >
+                Enviar
+              </button>
             </>
           )}
         </main>
@@ -420,31 +621,69 @@ export default function Home() {
         <main className="flex-1 overflow-y-auto bg-white px-4 py-6">
           <div className="max-w-sm mx-auto flex flex-col items-center text-center">
             <img src={LOGO} alt="King Food" className="w-24 h-24 object-contain mb-3" />
-            <p className="text-2xl mb-1" aria-hidden>😍 🍇</p>
+            <p className="text-2xl mb-1" aria-hidden>
+              😍 🍇
+            </p>
             <h1 className="text-xl font-extrabold text-gray-900 mb-2">Bem-vindo(a) ao King Food</h1>
             <p className="text-sm text-gray-700 leading-relaxed mb-2">
-              O sabor BR que dá um tapa na saudade. Açaí tradicional brasileiro, feito com ingredientes premium, entregue com carinho em Columbus.
+              O sabor BR que dá um tapa na saudade. Açaí tradicional brasileiro, feito com
+              ingredientes premium, entregue com carinho em Columbus.
             </p>
             <p className="text-xs text-gray-500 leading-relaxed mb-5">
               Welcome to King Food! Authentic Brazilian açaí, delivered with love in Columbus.
             </p>
             <div className="flex items-center justify-center gap-6 mb-6 text-xs text-gray-600">
-              <span className="flex flex-col items-center gap-1"><span className="text-2xl" aria-hidden>🧳</span>Retirada</span>
-              <span className="flex flex-col items-center gap-1"><span className="text-2xl" aria-hidden>🛵</span>Delivery</span>
+              <span className="flex flex-col items-center gap-1">
+                <span className="text-2xl" aria-hidden>
+                  🧳
+                </span>
+                Retirada
+              </span>
+              <span className="flex flex-col items-center gap-1">
+                <span className="text-2xl" aria-hidden>
+                  🛵
+                </span>
+                Delivery
+              </span>
             </div>
             <div className="w-full flex flex-col gap-3 items-center mb-6">
-              <button type="button" onClick={openMenu} className="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-4 rounded-2xl text-base shadow-lg shadow-purple-700/25 active:scale-[0.99] transition">Ver cardápio →</button>
-              <a href={GROUP_URL} target="_blank" rel="noopener noreferrer" className="w-full border-2 border-black text-black font-bold py-3.5 rounded-2xl text-base text-center bg-transparent hover:bg-black/5 active:scale-[0.99] transition">Entre em nosso grupo</a>
+              <button
+                type="button"
+                onClick={openMenu}
+                className="w-full !bg-purple-700 hover:!bg-purple-800 !text-white font-bold py-4 rounded-2xl text-base shadow-lg shadow-purple-700/25 active:scale-[0.99] transition"
+                style={{ color: "#ffffff", backgroundColor: "#7e22ce" }}
+              >
+                Ver cardápio →
+              </button>
+              <a
+                href={GROUP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full border-2 border-black text-black font-bold py-3.5 rounded-2xl text-base text-center bg-transparent hover:bg-black/5 active:scale-[0.99] transition"
+              >
+                Entre em nosso grupo
+              </a>
               {canInstall && (
-                <button type="button" onClick={handleInstall} className="mt-1 inline-flex items-center justify-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 py-2 px-3">
+                <button
+                  type="button"
+                  onClick={() => setShowInstallModal(true)}
+                  className="mt-1 inline-flex items-center justify-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 py-2 px-3"
+                >
                   <span aria-hidden>+</span> Instalar app
                 </button>
               )}
             </div>
             <div className="w-full text-left mb-3">
               <h2 className="text-sm font-extrabold text-black mb-2">O que dizem nossos clientes</h2>
-              <a href={MAPS_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-                <div className="shrink-0 w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center"><span className="text-lg font-bold text-[#4285F4]">G</span></div>
+              <a
+                href={MAPS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
+              >
+                <div className="shrink-0 w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center">
+                  <span className="text-lg font-bold text-[#4285F4]">G</span>
+                </div>
                 <div>
                   <p className="text-sm font-bold text-gray-900">Google</p>
                   <p className="text-sm text-[#E37400]">★★★★★ 5.0</p>
@@ -454,7 +693,10 @@ export default function Home() {
             </div>
             <div className="w-full flex gap-3 overflow-x-auto pb-2 scrollbar-hide text-left">
               {HOME_REVIEWS.map((r) => (
-                <div key={r.a} className="min-w-[200px] rounded-2xl border border-gray-100 bg-gray-50 p-3">
+                <div
+                  key={r.a}
+                  className="min-w-[200px] rounded-2xl border border-gray-100 bg-gray-50 p-3"
+                >
                   <p className="text-[#FFD100] text-xs">★★★★★</p>
                   <p className="text-xs text-gray-800 mt-1">“{r.t}”</p>
                   <p className="text-[10px] text-gray-400 mt-2">{r.a}</p>
@@ -465,34 +707,68 @@ export default function Home() {
         </main>
       )}
 
-      {showInstallModal && canInstall && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center px-5">
-          <div className="absolute inset-0 bg-black/55" onClick={dismissInstallModal} aria-hidden />
-          <div role="dialog" aria-modal="true" aria-labelledby="install-title" className="relative z-10 w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl text-center">
-            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFD100]">
-              <img src={LOGO} alt="" className="h-12 w-12 object-contain" />
-            </div>
-            <h2 id="install-title" className="text-lg font-extrabold text-gray-900">Instale nosso app 📲</h2>
-            <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-              Peça mais rápido, acompanhe seus pedidos e acumule pontos direto na tela inicial do seu celular.
-            </p>
-            <button type="button" onClick={handleInstall} className="mt-5 w-full rounded-2xl bg-purple-700 py-3.5 text-sm font-bold text-white">Instalar agora</button>
-            <button type="button" onClick={dismissInstallModal} className="mt-2 w-full py-2.5 text-sm font-medium text-gray-500">Agora não</button>
-          </div>
-        </div>
-      )}
+      <InstallModal open={showInstallModal} onInstall={handleInstall} onDismiss={dismissInstallModal} />
 
-      <a href={WA_URL} target="_blank" rel="noopener noreferrer" className="fixed z-[45] right-4 bottom-24 w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/40 flex items-center justify-center active:scale-95 transition" aria-label="WhatsApp">
+      <a
+        href={WA_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed z-[45] right-4 bottom-24 w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/40 flex items-center justify-center active:scale-95 transition"
+        aria-label="WhatsApp"
+      >
         <WhatsAppIcon className="w-7 h-7" />
       </a>
 
       <nav className="shrink-0 z-30 bg-white border-t border-gray-100 px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between max-w-md mx-auto">
-          <button type="button" onClick={goHome} className={`flex flex-col items-center gap-0.5 min-w-[56px] ${tab === "home" ? "text-purple-700" : "text-gray-400"}`}><span className="text-xl">🏠</span><span className="text-[10px] font-semibold">Início</span></button>
-          <button type="button" onClick={openMenu} className={`flex flex-col items-center gap-0.5 min-w-[56px] ${tab === "menu" ? "text-purple-700" : "text-gray-400"}`}><span className="text-xl">📋</span><span className="text-[10px] font-semibold">Cardápio</span></button>
-          <button type="button" onClick={openMenu} className="-mt-5 w-14 h-14 rounded-full bg-purple-700 text-white shadow-lg flex items-center justify-center text-2xl" aria-label="Pedir">🛒</button>
-          <button type="button" onClick={openOrders} className={`flex flex-col items-center gap-0.5 min-w-[56px] ${tab === "orders" ? "text-purple-700" : "text-gray-400"}`}><span className="text-xl">🧾</span><span className="text-[10px] font-semibold">Pedidos</span></button>
-          <button type="button" onClick={openRewards} className={`flex flex-col items-center gap-0.5 min-w-[56px] ${tab === "rewards" ? "text-purple-700" : "text-gray-400"}`}><span className="text-xl">⭐</span><span className="text-[10px] font-semibold">Recompensas</span></button>
+          <button
+            type="button"
+            onClick={goHome}
+            className={`flex flex-col items-center gap-0.5 min-w-[56px] ${
+              tab === "home" ? "text-purple-700" : "text-gray-400"
+            }`}
+          >
+            <span className="text-xl">🏠</span>
+            <span className="text-[10px] font-semibold">Início</span>
+          </button>
+          <button
+            type="button"
+            onClick={openMenu}
+            className={`flex flex-col items-center gap-0.5 min-w-[56px] ${
+              tab === "menu" ? "text-purple-700" : "text-gray-400"
+            }`}
+          >
+            <span className="text-xl">📋</span>
+            <span className="text-[10px] font-semibold">Cardápio</span>
+          </button>
+          <button
+            type="button"
+            onClick={openMenu}
+            className="-mt-5 w-14 h-14 rounded-full bg-purple-700 text-white shadow-lg flex items-center justify-center text-2xl"
+            aria-label="Pedir"
+          >
+            🛒
+          </button>
+          <button
+            type="button"
+            onClick={openOrders}
+            className={`flex flex-col items-center gap-0.5 min-w-[56px] ${
+              tab === "orders" ? "text-purple-700" : "text-gray-400"
+            }`}
+          >
+            <span className="text-xl">🧾</span>
+            <span className="text-[10px] font-semibold">Pedidos</span>
+          </button>
+          <button
+            type="button"
+            onClick={openRewards}
+            className={`flex flex-col items-center gap-0.5 min-w-[56px] ${
+              tab === "rewards" ? "text-purple-700" : "text-gray-400"
+            }`}
+          >
+            <span className="text-xl">⭐</span>
+            <span className="text-[10px] font-semibold">Recompensas</span>
+          </button>
         </div>
       </nav>
     </div>
