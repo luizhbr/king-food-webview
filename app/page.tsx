@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const MENU_URL = "https://kingfood.fe-v2.ola.click/products";
 const WA_URL = "https://wa.me/12673107535";
@@ -16,6 +16,11 @@ const SIDE_LINKS = [
   { label: "Horários e entrega", action: "menu" as const },
   { label: "Fale conosco", href: WA_URL },
 ];
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -36,6 +41,8 @@ export default function Home() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [iframeReady, setIframeReady] = useState(false);
+  const [canInstall, setCanInstall] = useState(false);
+  const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
     const logoTimer = setTimeout(() => setShowLogo(true), 100);
@@ -52,6 +59,47 @@ export default function Home() {
       document.body.style.overflow = "";
     };
   }, [drawerOpen]);
+
+  useEffect(() => {
+    // Já instalado (standalone) → não mostrar botão
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      // @ts-expect-error iOS Safari
+      window.navigator.standalone === true;
+    if (isStandalone) {
+      setCanInstall(false);
+      return;
+    }
+
+    const onBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      deferredPrompt.current = e as BeforeInstallPromptEvent;
+      setCanInstall(true);
+    };
+
+    const onInstalled = () => {
+      deferredPrompt.current = null;
+      setCanInstall(false);
+    };
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    const promptEvent = deferredPrompt.current;
+    if (!promptEvent) return;
+    await promptEvent.prompt();
+    const { outcome } = await promptEvent.userChoice;
+    if (outcome === "accepted") {
+      deferredPrompt.current = null;
+      setCanInstall(false);
+    }
+  };
 
   const openMenu = () => {
     setDrawerOpen(false);
@@ -230,7 +278,7 @@ export default function Home() {
             Açaí • Delivery • Columbus, OH
           </p>
 
-          <div className="w-full max-w-sm flex flex-col gap-3">
+          <div className="w-full max-w-sm flex flex-col gap-3 items-center">
             <button
               type="button"
               onClick={openMenu}
@@ -247,6 +295,19 @@ export default function Home() {
             >
               Entre em nosso grupo
             </a>
+
+            {canInstall && (
+              <button
+                type="button"
+                onClick={handleInstall}
+                className="mt-1 inline-flex items-center justify-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 py-2 px-3 active:scale-[0.98] transition"
+              >
+                <span className="text-base leading-none" aria-hidden>
+                  +
+                </span>
+                Instalar app
+              </button>
+            )}
           </div>
         </main>
       )}
