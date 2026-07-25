@@ -11,7 +11,6 @@ const LOGO = "/logo-kingfood.png.png";
 
 const SIDE_LINKS = [
   { label: "Cardápio completo", action: "menu" as const },
-  { label: "WhatsApp", href: WA_URL },
   { label: "Entrar no grupo", href: GROUP_URL },
   { label: "Instagram", href: "https://instagram.com/king.food_delivery" },
   { label: "Horários e entrega", action: "menu" as const },
@@ -120,25 +119,15 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            {showMenu && (
-              <button
-                type="button"
-                onClick={goHome}
-                className="text-xs font-semibold text-white/80 px-2 py-1.5 rounded-lg hover:bg-white/10"
-              >
-                ← Início
-              </button>
-            )}
-            <a
-              href={WA_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-full transition"
+          {showMenu && (
+            <button
+              type="button"
+              onClick={goHome}
+              className="text-xs font-semibold text-white/80 px-2 py-1.5 rounded-lg hover:bg-white/10"
             >
-              WhatsApp
-            </a>
-          </div>
+              ← Início
+            </button>
+          )}
         </div>
       </header>
 
@@ -188,7 +177,7 @@ export default function Home() {
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
           <p className="text-xs text-gray-400 text-center">
-            Entrega 50–60 min • Columbus, OH
+            Entrega em até 40 min • Columbus, OH
           </p>
         </div>
       </aside>
@@ -241,18 +230,9 @@ export default function Home() {
               href={GROUP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full bg-black hover:bg-gray-900 text-white font-bold py-4 rounded-2xl text-base text-center active:scale-[0.99] transition"
+              className="w-full border-2 border-black text-black font-bold py-3.5 rounded-2xl text-base text-center bg-transparent hover:bg-black/5 active:scale-[0.99] transition"
             >
               Entre em nosso grupo
-            </a>
-
-            <a
-              href={WA_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full text-center text-sm font-semibold text-green-600 py-2"
-            >
-              Ou peça pelo WhatsApp
             </a>
           </div>
         </main>
