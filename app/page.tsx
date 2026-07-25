@@ -8,6 +8,7 @@ const GROUP_URL =
   "https://wa.me/12673107535?text=Ol%C3%A1!%20Quero%20entrar%20no%20grupo%20da%20King%20Food";
 const MAPS_URL = "https://maps.app.goo.gl/GR2gpipSMqZdH9Xy5";
 const LOGO = "/logo-kingfood.png.png";
+const INSTALL_DISMISS_KEY = "kf_install_dismissed";
 
 type Tab =
   | "home"
@@ -65,6 +66,7 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("home");
   const [iframeReady, setIframeReady] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
 
   const [profileName, setProfileName] = useState("");
@@ -92,11 +94,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = drawerOpen ? "hidden" : "";
+    document.body.style.overflow = drawerOpen || showInstallModal ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [drawerOpen]);
+  }, [drawerOpen, showInstallModal]);
 
   useEffect(() => {
     try {
@@ -121,18 +123,25 @@ export default function Home() {
       window.navigator.standalone === true;
     if (isStandalone) {
       setCanInstall(false);
+      setShowInstallModal(false);
       return;
     }
+
+    const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
 
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
       deferredPrompt.current = e as BeforeInstallPromptEvent;
       setCanInstall(true);
+      if (!dismissed) {
+        setShowInstallModal(true);
+      }
     };
 
     const onInstalled = () => {
       deferredPrompt.current = null;
       setCanInstall(false);
+      setShowInstallModal(false);
     };
 
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
@@ -146,12 +155,18 @@ export default function Home() {
   const handleInstall = async () => {
     const promptEvent = deferredPrompt.current;
     if (!promptEvent) return;
+    setShowInstallModal(false);
     await promptEvent.prompt();
     const { outcome } = await promptEvent.userChoice;
     if (outcome === "accepted") {
       deferredPrompt.current = null;
       setCanInstall(false);
     }
+  };
+
+  const dismissInstallModal = () => {
+    sessionStorage.setItem(INSTALL_DISMISS_KEY, "1");
+    setShowInstallModal(false);
   };
 
   const openMenu = () => {
@@ -377,71 +392,32 @@ export default function Home() {
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
           <h2 className="text-lg font-extrabold text-black mb-4">Pedidos</h2>
           <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 mb-5">
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">
-              Em andamento
-            </p>
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Em andamento</p>
             <p className="text-sm font-semibold text-gray-800">Nenhum pedido em andamento</p>
-            <p className="text-xs text-gray-500 mt-1">
-              Quando você fizer um pedido, o status aparece aqui.
-            </p>
+            <p className="text-xs text-gray-500 mt-1">Quando você fizer um pedido, o status aparece aqui.</p>
           </div>
           <h3 className="text-sm font-bold text-gray-900 mb-3">Histórico</h3>
           <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center">
-            <span className="text-3xl" aria-hidden>
-              🧾
-            </span>
+            <span className="text-3xl" aria-hidden>🧾</span>
             <p className="text-sm font-medium text-gray-700 mt-2">Sem pedidos anteriores</p>
-            <p className="text-xs text-gray-500 mt-1 mb-4">
-              Faça seu primeiro pedido e acompanhe por aqui.
-            </p>
-            <button
-              type="button"
-              onClick={openMenu}
-              className="inline-flex items-center justify-center bg-purple-700 text-white text-sm font-bold px-4 py-2.5 rounded-full"
-            >
-              Ver cardápio
-            </button>
+            <button type="button" onClick={openMenu} className="mt-4 inline-flex items-center justify-center bg-purple-700 text-white text-sm font-bold px-4 py-2.5 rounded-full">Ver cardápio</button>
           </div>
-          <a
-            href={WA_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-5 flex items-center justify-center gap-2 text-sm font-semibold text-green-600"
-          >
-            Dúvida sobre um pedido? WhatsApp
-          </a>
         </main>
       ) : tab === "rewards" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
           <h2 className="text-lg font-extrabold text-black mb-4">Recompensas</h2>
           <div className="rounded-2xl bg-gradient-to-r from-purple-700 to-purple-500 text-white p-5 mb-5">
-            <p className="text-xs font-bold uppercase tracking-wider text-white/80">
-              Ganhe pontos e recompensas!
-            </p>
+            <p className="text-xs font-bold uppercase tracking-wider text-white/80">Ganhe pontos e recompensas!</p>
             <p className="text-3xl font-extrabold mt-2">{pointsBalance} pts</p>
-            <p className="text-sm text-white/80 mt-1">
-              A cada pedido você acumula pontos para trocar por descontos.
-            </p>
           </div>
-          <button
-            type="button"
-            onClick={openMenu}
-            className="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition"
-          >
-            Pedir e ganhar pontos →
-          </button>
+          <button type="button" onClick={openMenu} className="w-full bg-purple-700 text-white font-bold py-3.5 rounded-2xl text-sm">Pedir e ganhar pontos →</button>
         </main>
       ) : tab === "profile" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
           <h2 className="text-lg font-extrabold text-black mb-4">Meus dados</h2>
-          <button
-            type="button"
-            onClick={openRewards}
-            className="w-full text-left rounded-2xl bg-gradient-to-r from-purple-700 to-purple-500 text-white p-4 mb-5 active:scale-[0.99] transition"
-          >
+          <button type="button" onClick={openRewards} className="w-full text-left rounded-2xl bg-gradient-to-r from-purple-700 to-purple-500 text-white p-4 mb-5">
             <p className="text-xs font-bold uppercase tracking-wide text-white/80">Saldo de pontos</p>
             <p className="text-2xl font-extrabold mt-1">{pointsBalance} pts</p>
-            <p className="text-xs text-white/70 mt-1">Ver recompensas →</p>
           </button>
           <div className="space-y-3">
             <div>
@@ -457,9 +433,7 @@ export default function Home() {
               <input id="email" type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} placeholder="seu@email.com" className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500" />
             </div>
           </div>
-          <button type="button" onClick={saveProfile} className="mt-6 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition">
-            {profileSaved ? "Salvo ✓" : "Salvar dados"}
-          </button>
+          <button type="button" onClick={saveProfile} className="mt-6 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm">{profileSaved ? "Salvo ✓" : "Salvar dados"}</button>
         </main>
       ) : tab === "addresses" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
@@ -467,44 +441,36 @@ export default function Home() {
           {addresses.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center mb-5">
               <p className="text-sm text-gray-600">Nenhum endereço salvo</p>
-              <p className="text-xs text-gray-400 mt-1">Cadastre para agilizar o próximo pedido.</p>
             </div>
           ) : (
             <ul className="space-y-2 mb-5">
               {addresses.map((a) => (
-                <li key={a.id} className="rounded-2xl border border-gray-100 p-4 flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-gray-400 uppercase">{a.label}</p>
-                    <p className="text-sm text-gray-800 mt-0.5 break-words">{a.line}</p>
-                  </div>
+                <li key={a.id} className="rounded-2xl border border-gray-100 p-4 flex justify-between gap-3">
+                  <p className="text-sm text-gray-800 break-words">{a.line}</p>
                   <button type="button" onClick={() => removeAddress(a.id)} className="text-xs font-semibold text-red-600 shrink-0">Remover</button>
                 </li>
               ))}
             </ul>
           )}
-          <label className="text-xs font-semibold text-gray-500" htmlFor="addr">Novo endereço</label>
-          <textarea id="addr" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder="Rua, número, apto, cidade, ZIP" rows={3} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500 resize-none" />
-          <button type="button" onClick={addAddress} className="mt-3 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition">Salvar endereço</button>
+          <textarea id="addr" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder="Rua, número, apto, cidade, ZIP" rows={3} className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500 resize-none" />
+          <button type="button" onClick={addAddress} className="mt-3 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm">Salvar endereço</button>
         </main>
       ) : tab === "rate" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
           <h2 className="text-lg font-extrabold text-black mb-2">Avaliar pedido</h2>
-          <p className="text-sm text-gray-500 mb-6">Como foi sua última experiência com a King Food?</p>
           {ratingSent ? (
             <div className="rounded-2xl border border-gray-100 bg-gray-50 p-6 text-center">
-              <p className="text-2xl" aria-hidden>🙏</p>
-              <p className="text-sm font-bold text-gray-900 mt-2">Obrigado pelo feedback!</p>
+              <p className="text-sm font-bold text-gray-900">Obrigado pelo feedback!</p>
               <button type="button" onClick={goHome} className="mt-4 text-sm font-semibold text-purple-700">Voltar ao início</button>
             </div>
           ) : (
             <>
               <div className="flex justify-center gap-2 mb-6">
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <button key={n} type="button" onClick={() => setRating(n)} className={`w-11 h-11 rounded-full text-xl transition ${n <= rating ? "text-[#FFD100] scale-110" : "text-gray-300"}`} aria-label={`${n} estrelas`}>★</button>
+                  <button key={n} type="button" onClick={() => setRating(n)} className={`w-11 h-11 text-xl ${n <= rating ? "text-[#FFD100]" : "text-gray-300"}`}>★</button>
                 ))}
               </div>
-              <label className="text-xs font-semibold text-gray-500" htmlFor="comment">Comentário (opcional)</label>
-              <textarea id="comment" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Conte como foi o pedido..." rows={4} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500 resize-none" />
+              <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Comentário (opcional)" rows={4} className="w-full rounded-xl border border-gray-200 px-3 py-3 text-sm resize-none" />
               <button type="button" onClick={submitRating} disabled={rating < 1} className="mt-4 w-full bg-purple-700 disabled:bg-gray-300 text-white font-bold py-3.5 rounded-2xl text-sm">Enviar avaliação</button>
             </>
           )}
@@ -518,9 +484,8 @@ export default function Home() {
             </p>
             <h1 className="text-xl font-extrabold text-gray-900 mb-2">Bem-vindo(a) ao King Food</h1>
             <p className="text-sm text-gray-700 leading-relaxed mb-2">
-              Seja muito bem-vindo(a) ao King Food! O sabor BR que dá um tapa na saudade. Açaí
-              tradicional brasileiro, feito com ingredientes premium, entregue com carinho em
-              Columbus.
+              O sabor BR que dá um tapa na saudade. Açaí tradicional brasileiro, feito com
+              ingredientes premium, entregue com carinho em Columbus.
             </p>
             <p className="text-xs text-gray-500 leading-relaxed mb-5">
               Welcome to King Food! Authentic Brazilian açaí, delivered with love in Columbus.
@@ -608,6 +573,48 @@ export default function Home() {
             </div>
           </div>
         </main>
+      )}
+
+      {/* ========== POP-UP INSTALAR APP ========== */}
+      {showInstallModal && canInstall && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-5">
+          <div
+            className="absolute inset-0 bg-black/55"
+            onClick={dismissInstallModal}
+            aria-hidden
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="install-title"
+            className="relative z-10 w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl text-center"
+          >
+            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFD100]">
+              <img src={LOGO} alt="" className="h-12 w-12 object-contain" />
+            </div>
+            <h2 id="install-title" className="text-lg font-extrabold text-gray-900">
+              Instale nosso app 📲
+            </h2>
+            <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+              Peça mais rápido, acompanhe seus pedidos e acumule pontos direto na tela inicial do
+              seu celular.
+            </p>
+            <button
+              type="button"
+              onClick={handleInstall}
+              className="mt-5 w-full rounded-2xl bg-purple-700 py-3.5 text-sm font-bold text-white active:scale-[0.99] transition"
+            >
+              Instalar agora
+            </button>
+            <button
+              type="button"
+              onClick={dismissInstallModal}
+              className="mt-2 w-full py-2.5 text-sm font-medium text-gray-500 hover:text-gray-800"
+            >
+              Agora não
+            </button>
+          </div>
+        </div>
       )}
 
       <a
