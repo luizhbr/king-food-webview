@@ -4,8 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 const MENU_URL = "https://kingfood.fe-v2.ola.click/products";
 const WA_URL = "https://wa.me/12673107535";
-const GROUP_URL =
-  "https://wa.me/12673107535?text=Ol%C3%A1!%20Quero%20entrar%20no%20grupo%20da%20King%20Food";
+const GROUP_URL = "https://chat.whatsapp.com/LtoVNE9AJ2u2nlrlruTxhd";
 const MAPS_URL = "https://maps.app.goo.gl/GR2gpipSMqZdH9Xy5";
 const LOGO = "/logo-kingfood.png.png";
 const INSTALL_DISMISS_KEY = "kf_install_dismissed";
