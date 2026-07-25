@@ -6,6 +6,7 @@ const MENU_URL = "https://kingfood.fe-v2.ola.click/products";
 const WA_URL = "https://wa.me/12673107535";
 const GROUP_URL =
   "https://wa.me/12673107535?text=Ol%C3%A1!%20Quero%20entrar%20no%20grupo%20da%20King%20Food";
+const MAPS_URL = "https://maps.app.goo.gl/GR2gpipSMqZdH9Xy5";
 const LOGO = "/logo-kingfood.png.png";
 
 type Tab =
@@ -31,6 +32,12 @@ const SIDE_LINKS: {
   { label: "Instagram", href: "https://instagram.com/king.food_delivery" },
   { label: "Horários e entrega", action: "hours" },
   { label: "Fale conosco", href: WA_URL },
+];
+
+const HOME_REVIEWS = [
+  { t: "Melhor açaí de Columbus.", a: "Marina S." },
+  { t: "Sabor igual ao do Brasil.", a: "Carlos R." },
+  { t: "Entrega rápida e carinhosa.", a: "Juliana P." },
 ];
 
 interface BeforeInstallPromptEvent extends Event {
@@ -60,20 +67,17 @@ export default function Home() {
   const [canInstall, setCanInstall] = useState(false);
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
 
-  // Perfil (local)
   const [profileName, setProfileName] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
   const [profileSaved, setProfileSaved] = useState(false);
   const pointsBalance = 0;
 
-  // Endereços (local)
   const [addresses, setAddresses] = useState<
     { id: string; label: string; line: string }[]
   >([]);
   const [newAddress, setNewAddress] = useState("");
 
-  // Avaliar pedido
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [ratingSent, setRatingSent] = useState(false);
@@ -219,7 +223,7 @@ export default function Home() {
       return;
     }
     if (link.action === "hours") {
-      setTab("orders"); // horários: info simples via pedidos/contato por enquanto
+      window.open(MAPS_URL, "_blank", "noopener,noreferrer");
       return;
     }
     if (link.href) {
@@ -430,223 +434,178 @@ export default function Home() {
       ) : tab === "profile" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
           <h2 className="text-lg font-extrabold text-black mb-4">Meus dados</h2>
-
           <button
             type="button"
             onClick={openRewards}
             className="w-full text-left rounded-2xl bg-gradient-to-r from-purple-700 to-purple-500 text-white p-4 mb-5 active:scale-[0.99] transition"
           >
-            <p className="text-xs font-bold uppercase tracking-wide text-white/80">
-              Saldo de pontos
-            </p>
+            <p className="text-xs font-bold uppercase tracking-wide text-white/80">Saldo de pontos</p>
             <p className="text-2xl font-extrabold mt-1">{pointsBalance} pts</p>
             <p className="text-xs text-white/70 mt-1">Ver recompensas →</p>
           </button>
-
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-semibold text-gray-500" htmlFor="name">
-                Nome
-              </label>
-              <input
-                id="name"
-                type="text"
-                value={profileName}
-                onChange={(e) => setProfileName(e.target.value)}
-                placeholder="Seu nome"
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500"
-              />
+              <label className="text-xs font-semibold text-gray-500" htmlFor="name">Nome</label>
+              <input id="name" type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Seu nome" className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-500" htmlFor="phone">
-                Telefone
-              </label>
-              <input
-                id="phone"
-                type="tel"
-                value={profilePhone}
-                onChange={(e) => setProfilePhone(e.target.value)}
-                placeholder="(000) 000-0000"
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500"
-              />
+              <label className="text-xs font-semibold text-gray-500" htmlFor="phone">Telefone</label>
+              <input id="phone" type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} placeholder="(000) 000-0000" className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-500" htmlFor="email">
-                E-mail
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={profileEmail}
-                onChange={(e) => setProfileEmail(e.target.value)}
-                placeholder="seu@email.com"
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500"
-              />
+              <label className="text-xs font-semibold text-gray-500" htmlFor="email">E-mail</label>
+              <input id="email" type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} placeholder="seu@email.com" className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500" />
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={saveProfile}
-            className="mt-6 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition"
-          >
+          <button type="button" onClick={saveProfile} className="mt-6 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition">
             {profileSaved ? "Salvo ✓" : "Salvar dados"}
           </button>
         </main>
       ) : tab === "addresses" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
           <h2 className="text-lg font-extrabold text-black mb-4">Meus endereços</h2>
-
           {addresses.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center mb-5">
               <p className="text-sm text-gray-600">Nenhum endereço salvo</p>
-              <p className="text-xs text-gray-400 mt-1">
-                Cadastre para agilizar o próximo pedido.
-              </p>
+              <p className="text-xs text-gray-400 mt-1">Cadastre para agilizar o próximo pedido.</p>
             </div>
           ) : (
             <ul className="space-y-2 mb-5">
               {addresses.map((a) => (
-                <li
-                  key={a.id}
-                  className="rounded-2xl border border-gray-100 p-4 flex items-start justify-between gap-3"
-                >
+                <li key={a.id} className="rounded-2xl border border-gray-100 p-4 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-gray-400 uppercase">{a.label}</p>
                     <p className="text-sm text-gray-800 mt-0.5 break-words">{a.line}</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeAddress(a.id)}
-                    className="text-xs font-semibold text-red-600 shrink-0"
-                  >
-                    Remover
-                  </button>
+                  <button type="button" onClick={() => removeAddress(a.id)} className="text-xs font-semibold text-red-600 shrink-0">Remover</button>
                 </li>
               ))}
             </ul>
           )}
-
-          <label className="text-xs font-semibold text-gray-500" htmlFor="addr">
-            Novo endereço
-          </label>
-          <textarea
-            id="addr"
-            value={newAddress}
-            onChange={(e) => setNewAddress(e.target.value)}
-            placeholder="Rua, número, apto, cidade, ZIP"
-            rows={3}
-            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500 resize-none"
-          />
-          <button
-            type="button"
-            onClick={addAddress}
-            className="mt-3 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition"
-          >
-            Salvar endereço
-          </button>
+          <label className="text-xs font-semibold text-gray-500" htmlFor="addr">Novo endereço</label>
+          <textarea id="addr" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} placeholder="Rua, número, apto, cidade, ZIP" rows={3} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500 resize-none" />
+          <button type="button" onClick={addAddress} className="mt-3 w-full bg-black text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition">Salvar endereço</button>
         </main>
       ) : tab === "rate" ? (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-5">
           <h2 className="text-lg font-extrabold text-black mb-2">Avaliar pedido</h2>
-          <p className="text-sm text-gray-500 mb-6">
-            Como foi sua última experiência com a King Food?
-          </p>
-
+          <p className="text-sm text-gray-500 mb-6">Como foi sua última experiência com a King Food?</p>
           {ratingSent ? (
             <div className="rounded-2xl border border-gray-100 bg-gray-50 p-6 text-center">
-              <p className="text-2xl" aria-hidden>
-                🙏
-              </p>
+              <p className="text-2xl" aria-hidden>🙏</p>
               <p className="text-sm font-bold text-gray-900 mt-2">Obrigado pelo feedback!</p>
-              <p className="text-xs text-gray-500 mt-1">Sua opinião nos ajuda a melhorar.</p>
-              <button
-                type="button"
-                onClick={goHome}
-                className="mt-4 text-sm font-semibold text-purple-700"
-              >
-                Voltar ao início
-              </button>
+              <button type="button" onClick={goHome} className="mt-4 text-sm font-semibold text-purple-700">Voltar ao início</button>
             </div>
           ) : (
             <>
               <div className="flex justify-center gap-2 mb-6">
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setRating(n)}
-                    className={`w-11 h-11 rounded-full text-xl transition ${
-                      n <= rating ? "text-[#FFD100] scale-110" : "text-gray-300"
-                    }`}
-                    aria-label={`${n} estrela${n > 1 ? "s" : ""}`}
-                  >
-                    ★
-                  </button>
+                  <button key={n} type="button" onClick={() => setRating(n)} className={`w-11 h-11 rounded-full text-xl transition ${n <= rating ? "text-[#FFD100] scale-110" : "text-gray-300"}`} aria-label={`${n} estrelas`}>★</button>
                 ))}
               </div>
-
-              <label className="text-xs font-semibold text-gray-500" htmlFor="comment">
-                Comentário (opcional)
-              </label>
-              <textarea
-                id="comment"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Conte como foi o pedido..."
-                rows={4}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500 resize-none"
-              />
-
-              <button
-                type="button"
-                onClick={submitRating}
-                disabled={rating < 1}
-                className="mt-4 w-full bg-purple-700 disabled:bg-gray-300 disabled:text-gray-500 text-white font-bold py-3.5 rounded-2xl text-sm active:scale-[0.99] transition"
-              >
-                Enviar avaliação
-              </button>
+              <label className="text-xs font-semibold text-gray-500" htmlFor="comment">Comentário (opcional)</label>
+              <textarea id="comment" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Conte como foi o pedido..." rows={4} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-3 text-sm outline-none focus:border-purple-500 resize-none" />
+              <button type="button" onClick={submitRating} disabled={rating < 1} className="mt-4 w-full bg-purple-700 disabled:bg-gray-300 text-white font-bold py-3.5 rounded-2xl text-sm">Enviar avaliação</button>
             </>
           )}
         </main>
       ) : (
-        <main className="flex-1 flex flex-col items-center justify-center px-6 bg-white min-h-0 overflow-y-auto">
-          <img src={LOGO} alt="King Food" className="w-28 h-28 object-contain mb-4" />
-          <h1 className="text-xl font-bold text-gray-900 mb-1">King Food</h1>
-          <p className="text-sm text-gray-500 mb-8 text-center">
-            Açaí • Delivery • Columbus, OH
-          </p>
+        <main className="flex-1 overflow-y-auto bg-white px-4 py-6">
+          <div className="max-w-sm mx-auto flex flex-col items-center text-center">
+            <img src={LOGO} alt="King Food" className="w-24 h-24 object-contain mb-3" />
+            <p className="text-2xl mb-1" aria-hidden>
+              😍 🍇
+            </p>
+            <h1 className="text-xl font-extrabold text-gray-900 mb-2">Bem-vindo(a) ao King Food</h1>
+            <p className="text-sm text-gray-700 leading-relaxed mb-2">
+              Seja muito bem-vindo(a) ao King Food! O sabor BR que dá um tapa na saudade. Açaí
+              tradicional brasileiro, feito com ingredientes premium, entregue com carinho em
+              Columbus.
+            </p>
+            <p className="text-xs text-gray-500 leading-relaxed mb-5">
+              Welcome to King Food! Authentic Brazilian açaí, delivered with love in Columbus.
+            </p>
 
-          <div className="w-full max-w-sm flex flex-col gap-3 items-center">
-            <button
-              type="button"
-              onClick={openMenu}
-              className="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-4 rounded-2xl text-base shadow-lg shadow-purple-700/25 active:scale-[0.99] transition"
-            >
-              Ver cardápio →
-            </button>
+            <div className="flex items-center justify-center gap-6 mb-6 text-xs text-gray-600">
+              <span className="flex flex-col items-center gap-1">
+                <span className="text-2xl" aria-hidden>
+                  🧳
+                </span>
+                Retirada
+              </span>
+              <span className="flex flex-col items-center gap-1">
+                <span className="text-2xl" aria-hidden>
+                  🛵
+                </span>
+                Delivery
+              </span>
+            </div>
 
-            <a
-              href={GROUP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full border-2 border-black text-black font-bold py-3.5 rounded-2xl text-base text-center bg-transparent hover:bg-black/5 active:scale-[0.99] transition"
-            >
-              Entre em nosso grupo
-            </a>
-
-            {canInstall && (
+            <div className="w-full flex flex-col gap-3 items-center mb-6">
               <button
                 type="button"
-                onClick={handleInstall}
-                className="mt-1 inline-flex items-center justify-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 py-2 px-3 active:scale-[0.98] transition"
+                onClick={openMenu}
+                className="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-4 rounded-2xl text-base shadow-lg shadow-purple-700/25 active:scale-[0.99] transition"
               >
-                <span className="text-base leading-none" aria-hidden>
-                  +
-                </span>
-                Instalar app
+                Ver cardápio →
               </button>
-            )}
+
+              <a
+                href={GROUP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full border-2 border-black text-black font-bold py-3.5 rounded-2xl text-base text-center bg-transparent hover:bg-black/5 active:scale-[0.99] transition"
+              >
+                Entre em nosso grupo
+              </a>
+
+              {canInstall && (
+                <button
+                  type="button"
+                  onClick={handleInstall}
+                  className="mt-1 inline-flex items-center justify-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 py-2 px-3 active:scale-[0.98] transition"
+                >
+                  <span className="text-base leading-none" aria-hidden>
+                    +
+                  </span>
+                  Instalar app
+                </button>
+              )}
+            </div>
+
+            <div className="w-full text-left mb-3">
+              <h2 className="text-sm font-extrabold text-black mb-2">O que dizem nossos clientes</h2>
+              <a
+                href={MAPS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm active:scale-[0.99] transition"
+              >
+                <div className="shrink-0 w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center bg-white">
+                  <span className="text-lg font-bold text-[#4285F4]" aria-hidden>
+                    G
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-gray-900">Google</p>
+                  <p className="text-sm text-[#E37400] tracking-tight">★★★★★ 5.0</p>
+                  <p className="text-xs text-gray-500">Ver todas as avaliações no Google Maps</p>
+                </div>
+              </a>
+            </div>
+
+            <div className="w-full flex gap-3 overflow-x-auto pb-2 scrollbar-hide text-left">
+              {HOME_REVIEWS.map((r) => (
+                <div
+                  key={r.a}
+                  className="min-w-[200px] rounded-2xl border border-gray-100 bg-gray-50 p-3"
+                >
+                  <p className="text-[#FFD100] text-xs tracking-tight">★★★★★</p>
+                  <p className="text-xs text-gray-800 mt-1 leading-snug">“{r.t}”</p>
+                  <p className="text-[10px] text-gray-400 mt-2 font-medium">{r.a}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </main>
       )}
@@ -663,64 +622,21 @@ export default function Home() {
 
       <nav className="shrink-0 z-30 bg-white border-t border-gray-100 px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between max-w-md mx-auto">
-          <button
-            type="button"
-            onClick={goHome}
-            className={`flex flex-col items-center gap-0.5 min-w-[56px] ${
-              tab === "home" ? "text-purple-700" : "text-gray-400"
-            }`}
-          >
-            <span className="text-xl" aria-hidden>
-              🏠
-            </span>
+          <button type="button" onClick={goHome} className={`flex flex-col items-center gap-0.5 min-w-[56px] ${tab === "home" ? "text-purple-700" : "text-gray-400"}`}>
+            <span className="text-xl" aria-hidden>🏠</span>
             <span className="text-[10px] font-semibold">Início</span>
           </button>
-
-          <button
-            type="button"
-            onClick={openMenu}
-            className={`flex flex-col items-center gap-0.5 min-w-[56px] ${
-              tab === "menu" ? "text-purple-700" : "text-gray-400"
-            }`}
-          >
-            <span className="text-xl" aria-hidden>
-              📋
-            </span>
+          <button type="button" onClick={openMenu} className={`flex flex-col items-center gap-0.5 min-w-[56px] ${tab === "menu" ? "text-purple-700" : "text-gray-400"}`}>
+            <span className="text-xl" aria-hidden>📋</span>
             <span className="text-[10px] font-semibold">Cardápio</span>
           </button>
-
-          <button
-            type="button"
-            onClick={openMenu}
-            className="-mt-5 w-14 h-14 rounded-full bg-purple-700 text-white shadow-lg shadow-purple-700/30 flex items-center justify-center text-2xl active:scale-95 transition"
-            aria-label="Carrinho / Pedir"
-          >
-            🛒
-          </button>
-
-          <button
-            type="button"
-            onClick={openOrders}
-            className={`flex flex-col items-center gap-0.5 min-w-[56px] ${
-              tab === "orders" ? "text-purple-700" : "text-gray-400"
-            }`}
-          >
-            <span className="text-xl" aria-hidden>
-              🧾
-            </span>
+          <button type="button" onClick={openMenu} className="-mt-5 w-14 h-14 rounded-full bg-purple-700 text-white shadow-lg shadow-purple-700/30 flex items-center justify-center text-2xl active:scale-95 transition" aria-label="Carrinho / Pedir">🛒</button>
+          <button type="button" onClick={openOrders} className={`flex flex-col items-center gap-0.5 min-w-[56px] ${tab === "orders" ? "text-purple-700" : "text-gray-400"}`}>
+            <span className="text-xl" aria-hidden>🧾</span>
             <span className="text-[10px] font-semibold">Pedidos</span>
           </button>
-
-          <button
-            type="button"
-            onClick={openRewards}
-            className={`flex flex-col items-center gap-0.5 min-w-[56px] ${
-              tab === "rewards" ? "text-purple-700" : "text-gray-400"
-            }`}
-          >
-            <span className="text-xl" aria-hidden>
-              ⭐
-            </span>
+          <button type="button" onClick={openRewards} className={`flex flex-col items-center gap-0.5 min-w-[56px] ${tab === "rewards" ? "text-purple-700" : "text-gray-400"}`}>
+            <span className="text-xl" aria-hidden>⭐</span>
             <span className="text-[10px] font-semibold">Recompensas</span>
           </button>
         </div>
