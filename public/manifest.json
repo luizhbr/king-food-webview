@@ -1,0 +1,18 @@
+{
+  "name": "King Food",
+  "short_name": "King Food",
+  "description": "Açaí Premium Delivery em Columbus, OH",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFD100",
+  "theme_color": "#000000",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/logo-kingfood.png.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
