@@ -20,10 +20,15 @@ export const metadata: Metadata = {
     icon: "/logo-kingfood.png.png",
     apple: "/logo-kingfood.png.png",
   },
+  appleWebApp: {
+    capable: true,
+    title: "King Food",
+    statusBarStyle: "black-translucent",
+  },
   openGraph: {
     type: "website",
     locale: "pt_BR",
-    url: "https://king-food-webview-luizztx-6366s-projects.vercel.app",
+    url: "https://kingfood.online",
     siteName: "King Food",
     title: "King Food | Açaí Premium Delivery",
     description:
@@ -40,8 +45,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "King Food | Açaí Premium Delivery",
-    description:
-      "O verdadeiro sabor do Brasil em Columbus. Peça agora.",
+    description: "O verdadeiro sabor do Brasil em Columbus. Peça agora.",
     images: ["/logo-kingfood.png.png"],
   },
 };
@@ -53,11 +57,47 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
+/** Captura beforeinstallprompt o mais cedo possível (antes do React hidratar). */
+const earlyPwaScript = `
+(function () {
+  try {
+    window.__kfDeferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window.__kfDeferredPrompt = e;
+      window.dispatchEvent(new Event('kf-beforeinstallprompt'));
+      console.log('[King Food PWA] beforeinstallprompt capturado');
+    });
+    window.addEventListener('appinstalled', function () {
+      window.__kfDeferredPrompt = null;
+      console.log('[King Food PWA] app instalado');
+    });
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').then(function (reg) {
+          console.log('[King Food PWA] SW registrado', reg.scope);
+        }).catch(function (err) {
+          console.warn('[King Food PWA] SW falhou', err);
+        });
+      });
+    }
+  } catch (err) {
+    console.warn('[King Food PWA] init error', err);
+  }
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <script dangerouslySetInnerHTML={{ __html: earlyPwaScript }} />
+      </head>
       <body className="antialiased bg-white text-black">{children}</body>
     </html>
   );
