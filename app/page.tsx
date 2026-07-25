@@ -2,24 +2,25 @@
 
 import { useState, useEffect } from "react";
 
+const MENU_URL = "https://kingfood.fe-v2.ola.click/products";
+
 const SIDE_LINKS = [
-  { label: "Cardápio completo", action: "close" },
+  { label: "Cardápio completo", href: MENU_URL, external: true },
   { label: "WhatsApp", href: "https://wa.me/12673107535", external: true },
   { label: "Instagram", href: "https://instagram.com/king.food_delivery", external: true },
-  { label: "Sobre a King Food", action: "close" },
-  { label: "Horários e entrega", action: "close" },
+  { label: "Sobre a King Food", href: MENU_URL, external: true },
+  { label: "Horários e entrega", href: MENU_URL, external: true },
   { label: "Fale conosco", href: "https://wa.me/12673107535", external: true },
 ];
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLogo, setShowLogo] = useState(false);
-  const [iframeReady, setIframeReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     const logoTimer = setTimeout(() => setShowLogo(true), 100);
-    const safetyTimer = setTimeout(() => setLoading(false), 2000);
+    const safetyTimer = setTimeout(() => setLoading(false), 1800);
     return () => {
       clearTimeout(logoTimer);
       clearTimeout(safetyTimer);
@@ -33,11 +34,19 @@ export default function Home() {
     };
   }, [drawerOpen]);
 
+  const openMenu = () => {
+    window.location.href = MENU_URL;
+  };
+
   const handleSideLink = (link: (typeof SIDE_LINKS)[0]) => {
-    if (link.external && link.href) {
-      window.open(link.href, "_blank", "noopener,noreferrer");
-    }
     setDrawerOpen(false);
+    if (link.external && link.href) {
+      if (link.href.includes("ola.click")) {
+        window.location.href = link.href;
+      } else {
+        window.open(link.href, "_blank", "noopener,noreferrer");
+      }
+    }
   };
 
   // ========== LOADING ==========
@@ -82,17 +91,17 @@ export default function Home() {
               <span className="block w-5 h-0.5 bg-white rounded" />
             </button>
 
-            <div className="flex items-center gap-2">
+            <button onClick={openMenu} className="flex items-center gap-2">
               <img
                 src="/logo-kingfood.png.png"
                 alt="King Food"
                 className="w-9 h-9 object-contain rounded-md"
               />
-              <div className="leading-tight">
+              <div className="leading-tight text-left">
                 <p className="font-bold text-sm">King Food</p>
                 <p className="text-[10px] text-white/60">Açaí • Delivery</p>
               </div>
-            </div>
+            </button>
           </div>
 
           <a
@@ -106,7 +115,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ========== DRAWER LATERAL ========== */}
+      {/* ========== DRAWER ========== */}
       <div
         className={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 ${
           drawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
@@ -159,21 +168,34 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* ========== CARDÁPIO DIRETO (iframe) ========== */}
-      <div className="flex-1 relative min-h-0">
-        {!iframeReady && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
-            <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
-          </div>
-        )}
-        <iframe
-          src="https://kingfood.fe-v2.ola.click/products"
-          className="absolute inset-0 w-full h-full border-0"
-          title="Cardápio King Food"
-          allow="payment"
-          onLoad={() => setIframeReady(true)}
+      {/* ========== CONTEÚDO PRINCIPAL ========== */}
+      <main className="flex-1 flex flex-col items-center justify-center px-6 bg-white min-h-0">
+        <img
+          src="/logo-kingfood.png.png"
+          alt="King Food"
+          className="w-28 h-28 object-contain mb-4"
         />
-      </div>
+        <h1 className="text-xl font-bold text-gray-900 mb-1">King Food</h1>
+        <p className="text-sm text-gray-500 mb-8 text-center">
+          Açaí • Delivery • Columbus, OH
+        </p>
+
+        <button
+          onClick={openMenu}
+          className="w-full max-w-sm bg-purple-700 hover:bg-purple-800 text-white font-bold py-4 rounded-2xl text-base shadow-lg shadow-purple-700/25 active:scale-[0.99] transition"
+        >
+          Ver cardápio →
+        </button>
+
+        <a
+          href="https://wa.me/12673107535"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 text-sm font-semibold text-green-600"
+        >
+          Ou peça pelo WhatsApp
+        </a>
+      </main>
 
       {/* ========== RODAPÉ ========== */}
       <nav className="shrink-0 z-30 bg-white border-t border-gray-100 px-6 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
@@ -187,23 +209,20 @@ export default function Home() {
           </button>
 
           <button
-            onClick={() => setIframeReady(false)}
+            onClick={openMenu}
             className="flex flex-col items-center gap-0.5 text-gray-400"
-            title="Recarregar cardápio"
           >
             <span className="text-xl">📋</span>
             <span className="text-[10px] font-semibold">Cardápio</span>
           </button>
 
-          <a
-            href="https://kingfood.fe-v2.ola.click/products"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={openMenu}
             className="-mt-5 w-14 h-14 rounded-full bg-purple-700 text-white shadow-lg shadow-purple-700/30 flex items-center justify-center text-2xl active:scale-95 transition"
-            aria-label="Carrinho / Pedir"
+            aria-label="Pedir"
           >
             🛒
-          </a>
+          </button>
 
           <a
             href="https://wa.me/12673107535"
