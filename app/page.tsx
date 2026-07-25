@@ -31,7 +31,7 @@ export default function Home() {
     <div className="relative flex flex-col h-screen bg-black overflow-hidden">
       {/* ========== TELA DE LOADING ========== */}
       {loading && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#FFD100]">
           {/* Logo com animação */}
           <div
             className={`flex flex-col items-center transition-all duration-700 ease-out
@@ -44,26 +44,20 @@ export default function Home() {
             <img
               src="/logo-kingfood.png"
               alt="King Food"
-              className="w-32 h-32 object-contain mb-4 drop-shadow-lg"
+              className="w-48 h-48 object-contain drop-shadow-md"
             />
-            <h1 className="text-2xl font-bold text-white tracking-wide">
-              King Food
-            </h1>
-            <p className="text-amber-400 text-sm mt-1 font-medium">
-              Os melhores açaís de Columbus
-            </p>
           </div>
 
           {/* Spinner */}
           <div
-            className={`mt-10 transition-opacity duration-500 delay-300
+            className={`mt-8 transition-opacity duration-500 delay-300
               ${showLogo ? "opacity-100" : "opacity-0"}`}
           >
-            <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
           </div>
 
           <p
-            className={`text-gray-400 text-xs mt-6 transition-opacity duration-500 delay-500
+            className={`text-black/70 text-xs mt-5 font-medium transition-opacity duration-500 delay-500
               ${showLogo ? "opacity-100" : "opacity-0"}`}
           >
             Carregando cardápio...
@@ -77,7 +71,7 @@ export default function Home() {
           <img
             src="/logo-kingfood.png"
             alt="King Food"
-            className="w-9 h-9 object-contain"
+            className="w-10 h-10 object-contain rounded-md"
           />
           <div>
             <h1 className="font-bold text-lg leading-tight">King Food</h1>
