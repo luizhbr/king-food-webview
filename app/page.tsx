@@ -6,14 +6,19 @@ const MENU_URL = "https://kingfood.fe-v2.ola.click/products";
 const WA_URL = "https://wa.me/12673107535";
 const GROUP_URL = "https://chat.whatsapp.com/LtoVNE9AJ2u2nlrlruTxhd";
 const MAPS_URL = "https://maps.app.goo.gl/GR2gpipSMqZdH9Xy5";
+const INSTAGRAM_URL = "https://instagram.com/king.food_delivery";
 const LOGO = "/logo-kingfood.png.png";
 const INSTALL_DISMISS_KEY = "kf_install_dismissed";
 
 type Tab = "home" | "menu" | "orders" | "rewards" | "hours";
 
-const SIDE_LINKS: { label: string; action?: "hours"; href?: string }[] = [
+const SIDE_LINKS: {
+  label: string;
+  action?: "hours";
+  href?: string;
+}[] = [
   { label: "Entrar no grupo", href: GROUP_URL },
-  { label: "Instagram", href: "https://instagram.com/king.food_delivery" },
+  { label: "Instagram", href: INSTAGRAM_URL },
   { label: "Horários e entrega", action: "hours" },
   { label: "Fale conosco", href: WA_URL },
 ];
@@ -188,9 +193,17 @@ export default function Home() {
     window.addEventListener("kf-beforeinstallprompt", onKfBip);
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
     window.addEventListener("appinstalled", onInstalled);
+
+    // Force SW update so users leave stale king-food-v1 cache
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((reg) => {
+          reg.update().catch(() => {});
+        })
+        .catch(() => {});
     }
+
     return () => {
       window.removeEventListener("kf-beforeinstallprompt", onKfBip);
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
@@ -243,15 +256,6 @@ export default function Home() {
   const openRewards = () => {
     setDrawerOpen(false);
     setTab("rewards");
-  };
-
-  const handleSideLink = (link: (typeof SIDE_LINKS)[0]) => {
-    setDrawerOpen(false);
-    if (link.action === "hours") {
-      setTab("hours");
-      return;
-    }
-    if (link.href) window.open(link.href, "_blank", "noopener,noreferrer");
   };
 
   const headerSubtitle =
@@ -354,16 +358,32 @@ export default function Home() {
           </button>
         </div>
         <nav className="py-2">
-          {SIDE_LINKS.map((link) => (
-            <button
-              key={link.label}
-              type="button"
-              onClick={() => handleSideLink(link)}
-              className="w-full text-left px-5 py-3.5 text-sm font-medium text-gray-800 hover:bg-purple-50 hover:text-purple-700 border-b border-gray-50 transition"
-            >
-              {link.label}
-            </button>
-          ))}
+          {SIDE_LINKS.map((link) =>
+            link.action === "hours" ? (
+              <button
+                key={link.label}
+                type="button"
+                onClick={() => {
+                  setDrawerOpen(false);
+                  setTab("hours");
+                }}
+                className="w-full text-left px-5 py-3.5 text-sm font-medium text-gray-800 hover:bg-purple-50 hover:text-purple-700 border-b border-gray-50 transition"
+              >
+                {link.label}
+              </button>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setDrawerOpen(false)}
+                className="block w-full text-left px-5 py-3.5 text-sm font-medium text-gray-800 hover:bg-purple-50 hover:text-purple-700 border-b border-gray-50 transition"
+              >
+                {link.label}
+              </a>
+            )
+          )}
         </nav>
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
           <p className="text-xs text-gray-400 text-center">Entrega em até 40 min • Columbus, OH</p>
