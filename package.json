@@ -1,17 +1,21 @@
 {
   "name": "king-food-webview",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "next": "15.1.11",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@serwist/next": "^9.0.14"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -20,6 +24,9 @@
     "typescript": "^5",
     "tailwindcss": "^3.4.1",
     "postcss": "^8",
-    "autoprefixer": "^10.0.1"
+    "autoprefixer": "^10.0.1",
+    "serwist": "^9.0.14",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.11"
   }
 }
