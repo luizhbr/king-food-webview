@@ -1,49 +1,48 @@
 # King Food Webview
 
-Casca simples do cardápio King Food (OlaClick) com:
-- Tela de loading animada
-- Logo próprio
-- Header com marca
-- Cardápio embutido via iframe
+PWA shell for King Food (açaí delivery, Columbus OH).
+Wraps OlaClick menu + branded home, hours, PWA install, WhatsApp.
 
-## Repositório
-https://github.com/luizhbr/king-food-webview
+## Tech Stack
 
-## Estrutura
+- **Next.js 15** (App Router, TypeScript)
+- **React 19**
+- **Tailwind CSS 3.4**
+- **Serwist** (Service Worker / PWA)
 
-```
-king-food-webview/
-├── app/
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx
-├── public/
-│   └── logo-kingfood.png   ← coloque seu logo aqui
-├── package.json
-├── tailwind.config.ts
-├── tsconfig.json
-├── next.config.ts
-└── postcss.config.mjs
-```
-
-## Como rodar local
+## Como rodar
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
-## Logo
+## Build
 
-Coloque o arquivo do logo em:
-
-```
-public/logo-kingfood.png
+```bash
+npm run build && npm start
 ```
 
-## Deploy na Vercel
+> Service Worker só funciona em produção.
 
-1. Acesse https://vercel.com
-2. **Add New Project**
-3. Importe o repositório `luizhbr/king-food-webview`
-4. Clique em Deploy
+## Env
+
+| Variável | Descrição |
+|----------|-----------|
+| NEXT_PUBLIC_OLACLICK_URL | URL do cardápio OlaClick |
+| NEXT_PUBLIC_WHATSAPP_NUMBER | WhatsApp (ex: 12673107535) |
+
+## Ícones PWA
+
+Coloque em `public/icons/`:
+
+- `icon-192x192.png`
+- `icon-512x512.png`
+- `maskable-icon-512x512.png`
+
+Gere em https://www.pwabuilder.com
+
+## Produção
+
+https://kingfood.online/

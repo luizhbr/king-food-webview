@@ -1,104 +1,126 @@
 import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
+import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { OnlineBanner } from "@/components/OnlineBanner";
+import {
+  APP_NAME,
+  APP_DEFAULT_TITLE,
+  APP_TITLE_TEMPLATE,
+  APP_DESCRIPTION,
+} from "@/lib/constants";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  variable: "--font-poppins",
+  weight: ["400", "600", "700", "800"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "King Food | Açaí Premium Delivery em Columbus, OH",
-  description:
-    "O verdadeiro sabor do Brasil em Columbus. Açaís premium, combos e delivery rápido. Peça agora no King Food.",
-  applicationName: "King Food",
-  authors: [{ name: "King Food" }],
-  keywords: [
-    "açaí",
-    "açaí Columbus",
-    "delivery Columbus",
-    "King Food",
-    "açaí brasileiro",
-    "food delivery Ohio",
-  ],
-  manifest: "/manifest.json",
-  icons: {
-    icon: "/logo-kingfood.png.png",
-    apple: "/logo-kingfood.png.png",
+  applicationName: APP_NAME,
+  title: {
+    default: APP_DEFAULT_TITLE,
+    template: APP_TITLE_TEMPLATE,
   },
+  description: APP_DESCRIPTION,
+  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "King Food",
     statusBarStyle: "black-translucent",
+    title: APP_NAME,
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  keywords: [
+    "açaí",
+    "acai",
+    "delivery",
+    "Columbus",
+    "Ohio",
+    "King Food",
+    "açaí delivery",
+    "comida brasileira",
+    "OlaClick",
+  ],
+  authors: [{ name: "King Food" }],
+  creator: "King Food",
+  publisher: "King Food",
+  icons: {
+    icon: "/icons/icon-192x192.png",
+    apple: "/icons/icon-192x192.png",
   },
   openGraph: {
     type: "website",
-    locale: "pt_BR",
+    siteName: APP_NAME,
+    title: {
+      default: APP_DEFAULT_TITLE,
+      template: APP_TITLE_TEMPLATE,
+    },
+    description: APP_DESCRIPTION,
     url: "https://kingfood.online",
-    siteName: "King Food",
-    title: "King Food | Açaí Premium Delivery",
-    description:
-      "Açaís premium, combos e delivery rápido em Columbus, Ohio. Sabor brasileiro de verdade.",
+    locale: "pt_BR",
     images: [
       {
-        url: "/logo-kingfood.png.png",
+        url: "/logo-kingfood.png",
         width: 512,
         height: 512,
-        alt: "King Food",
+        alt: "King Food Logo",
       },
     ],
   },
   twitter: {
-    card: "summary",
-    title: "King Food | Açaí Premium Delivery",
-    description: "O verdadeiro sabor do Brasil em Columbus. Peça agora.",
-    images: ["/logo-kingfood.png.png"],
+    card: "summary_large_image",
+    title: {
+      default: APP_DEFAULT_TITLE,
+      template: APP_TITLE_TEMPLATE,
+    },
+    description: APP_DESCRIPTION,
+    images: ["/logo-kingfood.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+    },
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#5B21B6",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
 };
 
-/** Captura beforeinstallprompt o mais cedo possível (antes do React hidratar). */
-const earlyPwaScript = `
-(function () {
-  try {
-    window.__kfDeferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', function (e) {
-      e.preventDefault();
-      window.__kfDeferredPrompt = e;
-      window.dispatchEvent(new Event('kf-beforeinstallprompt'));
-      console.log('[King Food PWA] beforeinstallprompt capturado');
-    });
-    window.addEventListener('appinstalled', function () {
-      window.__kfDeferredPrompt = null;
-      console.log('[King Food PWA] app instalado');
-    });
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('/sw.js').then(function (reg) {
-          console.log('[King Food PWA] SW registrado', reg.scope);
-        }).catch(function (err) {
-          console.warn('[King Food PWA] SW falhou', err);
-        });
-      });
-    }
-  } catch (err) {
-    console.warn('[King Food PWA] init error', err);
-  }
-})();
-`;
-
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" dir="ltr" className={`${inter.variable} ${poppins.variable}`}>
       <head>
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <script dangerouslySetInnerHTML={{ __html: earlyPwaScript }} />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className="antialiased bg-white text-black">{children}</body>
+      <body className="min-h-screen bg-brand-acaiDark font-sans text-brand-cream antialiased">
+        <OnlineBanner />
+        <Header />
+        <main className="relative">{children}</main>
+        <Footer />
+        <PwaInstallPrompt />
+        <WhatsAppButton />
+      </body>
     </html>
   );
 }
