@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "King Food | Açaí Premium Delivery em Columbus, OH",
@@ -98,7 +99,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <script dangerouslySetInnerHTML={{ __html: earlyPwaScript }} />
       </head>
-      <body className="antialiased bg-white text-black">{children}</body>
+      <body className="antialiased bg-white text-black">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
