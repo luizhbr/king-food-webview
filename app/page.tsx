@@ -77,7 +77,7 @@ function InstallModal({
         aria-labelledby="install-title"
         className="relative z-10 w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl text-center"
       >
-        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFD100]">
+        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0ea5e9]">
           <img src={LOGO} alt="" className="h-12 w-12 object-contain" />
         </div>
         <h2 id="install-title" className="text-lg font-extrabold text-gray-900">
@@ -90,7 +90,7 @@ function InstallModal({
         <button
           type="button"
           onClick={onInstall}
-          className="mt-5 w-full rounded-2xl bg-purple-700 py-3.5 text-sm font-bold text-white active:scale-[0.99] transition"
+          className="mt-5 w-full rounded-2xl bg-teal-600 py-3.5 text-sm font-bold text-white active:scale-[0.99] transition"
         >
           Instalar agora
         </button>
@@ -255,7 +255,7 @@ export default function Home() {
   if (loading) {
     return (
       <>
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#FFD100]">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0ea5e9]">
           <div
             className={`flex flex-col items-center transition-all duration-700 ease-out ${
               showLogo ? "opacity-100 scale-100" : "opacity-0 scale-90"
@@ -268,7 +268,7 @@ export default function Home() {
               showLogo ? "opacity-100" : "opacity-0"
             }`}
           >
-            <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
           </div>
         </div>
         <InstallModal open={showInstallModal} onInstall={handleInstall} onDismiss={dismissInstallModal} />
@@ -278,7 +278,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
-      <header className="shrink-0 z-40 bg-black text-white">
+      <header className="shrink-0 z-40 bg-teal-800 text-white">
         <div className="flex items-center justify-between px-3 py-2.5">
           <div className="flex items-center gap-2">
             <button
@@ -294,7 +294,7 @@ export default function Home() {
             <button type="button" onClick={goHome} className="flex items-center gap-2">
               <img src={LOGO} alt="King Food" className="w-9 h-9 object-contain rounded-md" />
               <div className="leading-tight text-left">
-                <p className="font-bold text-sm">King Food</p>
+                <p className="font-bold text-sm">King Food <span className="text-[9px] bg-white/20 px-1.5 py-0.5 rounded ml-1">DEV</span></p>
                 <p className="text-[10px] text-white/60">{headerSubtitle}</p>
               </div>
             </button>
@@ -323,11 +323,11 @@ export default function Home() {
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="bg-black text-white px-4 py-4 flex items-center justify-between">
+        <div className="bg-teal-800 text-white px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={LOGO} alt="King Food" className="w-10 h-10 object-contain rounded-md" />
             <div>
-              <p className="font-bold">King Food</p>
+              <p className="font-bold">King Food <span className="text-[9px] bg-white/20 px-1.5 py-0.5 rounded">DEV</span></p>
               <p className="text-xs text-white/60">Menu</p>
             </div>
           </div>
@@ -350,7 +350,7 @@ export default function Home() {
                   setDrawerOpen(false);
                   setTab("hours");
                 }}
-                className="w-full text-left px-5 py-3.5 text-sm font-medium text-gray-800 hover:bg-purple-50 hover:text-purple-700 border-b border-gray-50 transition"
+                className="w-full text-left px-5 py-3.5 text-sm font-medium text-gray-800 hover:bg-teal-50 hover:text-teal-700 border-b border-gray-50 transition"
               >
                 {link.label}
               </button>
@@ -361,7 +361,7 @@ export default function Home() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setDrawerOpen(false)}
-                className="block w-full text-left px-5 py-3.5 text-sm font-medium text-gray-800 hover:bg-purple-50 hover:text-purple-700 border-b border-gray-50 transition"
+                className="block w-full text-left px-5 py-3.5 text-sm font-medium text-gray-800 hover:bg-teal-50 hover:text-teal-700 border-b border-gray-50 transition"
               >
                 {link.label}
               </a>
@@ -377,9 +377,9 @@ export default function Home() {
         <div className="flex-1 relative min-h-0 bg-white">
           {!iframeReady && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-white px-6">
-              <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-10 h-10 border-4 border-teal-600 border-t-transparent rounded-full animate-spin" />
               <p className="text-sm text-gray-500">Carregando cardápio...</p>
-              <a href={MENU_URL} className="text-sm font-semibold text-purple-700 underline">
+              <a href={MENU_URL} className="text-sm font-semibold text-teal-700 underline">
                 Abrir em nova aba
               </a>
             </div>
@@ -408,12 +408,12 @@ export default function Home() {
                 <li
                   key={row.day}
                   className={`flex items-center justify-between gap-3 px-4 py-3.5 ${
-                    isToday ? "bg-blue-50" : "bg-white"
+                    isToday ? "bg-teal-50" : "bg-white"
                   }`}
                 >
                   <span
                     className={`text-sm ${
-                      isToday ? "font-bold text-blue-700" : "font-medium text-gray-800"
+                      isToday ? "font-bold text-teal-700" : "font-medium text-gray-800"
                     }`}
                   >
                     {row.label}
@@ -422,7 +422,7 @@ export default function Home() {
                   <span
                     className={`text-sm tabular-nums ${
                       isToday
-                        ? "font-bold text-blue-700"
+                        ? "font-bold text-teal-700"
                         : closed
                           ? "text-gray-400"
                           : "text-gray-600"
@@ -441,7 +441,7 @@ export default function Home() {
               href={MAPS_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-flex text-sm font-semibold text-purple-700"
+              className="mt-3 inline-flex text-sm font-semibold text-teal-700"
             >
               Ver no Google Maps →
             </a>
@@ -480,8 +480,8 @@ export default function Home() {
               <button
                 type="button"
                 onClick={openMenu}
-                className="w-full !bg-purple-700 hover:!bg-purple-800 !text-white font-bold py-4 rounded-2xl text-base shadow-lg shadow-purple-700/25 active:scale-[0.99] transition"
-                style={{ color: "#ffffff", backgroundColor: "#7e22ce" }}
+                className="w-full !bg-teal-600 hover:!bg-teal-700 !text-white font-bold py-4 rounded-2xl text-base shadow-lg shadow-teal-600/25 active:scale-[0.99] transition"
+                style={{ color: "#ffffff", backgroundColor: "#0d9488" }}
               >
                 Ver cardápio →
               </button>
@@ -489,7 +489,7 @@ export default function Home() {
                 href={GROUP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full border-2 border-black text-black font-bold py-3.5 rounded-2xl text-base text-center bg-transparent hover:bg-black/5 active:scale-[0.99] transition"
+                className="w-full border-2 border-teal-800 text-teal-800 font-bold py-3.5 rounded-2xl text-base text-center bg-transparent hover:bg-teal-50 active:scale-[0.99] transition"
               >
                 Entre em nosso grupo
               </a>
@@ -527,7 +527,7 @@ export default function Home() {
                   key={r.a}
                   className="min-w-[200px] rounded-2xl border border-gray-100 bg-gray-50 p-3"
                 >
-                  <p className="text-[#FFD100] text-xs">★★★★★</p>
+                  <p className="text-[#0ea5e9] text-xs">★★★★★</p>
                   <p className="text-xs text-gray-800 mt-1">“{r.t}”</p>
                   <p className="text-[10px] text-gray-400 mt-2">{r.a}</p>
                 </div>
@@ -555,7 +555,7 @@ export default function Home() {
             type="button"
             onClick={goHome}
             className={`flex flex-col items-center gap-0.5 min-w-[80px] ${
-              tab === "home" ? "text-purple-700" : "text-gray-400"
+              tab === "home" ? "text-teal-600" : "text-gray-400"
             }`}
           >
             <span className="text-xl">🏠</span>
@@ -565,7 +565,7 @@ export default function Home() {
             type="button"
             onClick={openMenu}
             className={`flex flex-col items-center gap-0.5 min-w-[80px] ${
-              tab === "menu" ? "text-purple-700" : "text-gray-400"
+              tab === "menu" ? "text-teal-600" : "text-gray-400"
             }`}
           >
             <span className="text-xl">📋</span>
