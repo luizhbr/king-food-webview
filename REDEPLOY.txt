@@ -1,2 +1,2 @@
-Stable webview restore trigger — 2026-07-26
+Stable webview restore trigger — 2026-07-27
 Do not delete. Used to force Vercel redeploy of the good version.
