@@ -943,17 +943,17 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* Área de conteúdo: uma shell flex-1; camadas absolutas por aba (sem gap) */}
-            <div className="flex-1 relative min-h-0 w-full max-w-5xl mx-auto">
-              {/* Cardápio — no mobile deixa espaço da bottom nav (~56px + safe area) */}
-                            <div
-                              className={`absolute inset-x-0 top-0 z-0 bg-white transition-opacity duration-300 ease-out bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 ${
-                                tab === "menu"
-                                  ? "opacity-100 pointer-events-auto z-[2]"
-                                  : "opacity-0 pointer-events-none z-0"
-                              }`}
-                              aria-hidden={tab !== "menu"}
-                            >
+      {/* Shell de conteúdo — irmã da bottom nav (não passa por baixo dela) */}
+                  <div className="flex-1 relative min-h-0 w-full max-w-5xl mx-auto">
+                    {/* Cardápio preenche 100% do shell; nav é elemento separado abaixo */}
+                    <div
+                      className={`absolute inset-0 bg-white transition-opacity duration-300 ease-out ${
+                        tab === "menu"
+                          ? "opacity-100 pointer-events-auto z-[2]"
+                          : "opacity-0 pointer-events-none z-0"
+                      }`}
+                      aria-hidden={tab !== "menu"}
+                    >
                 {menuMounted && (
                   <>
                     {tab === "menu" && !iframeReady && !iframeError && (
@@ -1005,7 +1005,7 @@ export default function Home() {
               </div>
 
               {tab === "hours" ? (
-                <main className="absolute inset-0 z-[1] overflow-y-auto px-4 py-5 max-w-2xl mx-auto w-full md:pb-6 pb-14">
+                <main className="absolute inset-0 z-[1] overflow-y-auto px-4 py-5 max-w-2xl mx-auto w-full pb-6">
                   <div className="flex items-center justify-between gap-3 mb-5">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl" aria-hidden>
@@ -1067,7 +1067,7 @@ export default function Home() {
                   </button>
                 </main>
               ) : tab === "home" ? (
-                <main ref={mainRef} className="absolute inset-0 z-[1] overflow-y-auto md:pb-6 pb-14">
+                <main ref={mainRef} className="absolute inset-0 z-[1] overflow-y-auto pb-6">
                   <div className="max-w-sm md:max-w-4xl mx-auto flex flex-col md:flex-row md:items-center md:gap-12 text-center md:text-left px-5 pt-4 pb-4 md:pt-16">
                     <div className="flex flex-col items-center md:items-start flex-1 w-full">
                       <img
@@ -1279,9 +1279,9 @@ export default function Home() {
               hasNativePrompt={hasNativePrompt}
             />
 
-            {/* Soft install banner — delayed, bottom, not blocking CTA */}
-            {showInstallBanner && !showInstallModal && tab === "home" && (
-              <div className="fixed bottom-14 md:bottom-4 left-0 right-0 z-[90] px-4 pointer-events-none">
+            {/* Soft install banner — acima da bottom nav no fluxo */}
+                        {showInstallBanner && !showInstallModal && tab === "home" && (
+                          <div className="absolute bottom-3 md:bottom-4 left-0 right-0 z-[90] px-4 pointer-events-none">
                 <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl p-3 shadow-2xl flex items-center gap-3">
                   <div className="shrink-0 w-10 h-10 rounded-xl bg-[#FFD100] overflow-hidden">
                                       <img src={LOGO} alt="" className="w-full h-full object-cover" decoding="async" />
@@ -1323,11 +1323,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* Bottom nav — 3 tabs, no FAB overlay */}
-      <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-black/80 backdrop-blur-xl border-t border-white/10 px-2 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
-        aria-label="Navegação inferior"
-      >
+      {/* Bottom nav — chrome separado no fluxo (não fixed por cima do iframe) */}
+            <nav
+              className="md:hidden shrink-0 z-30 bg-black/90 backdrop-blur-xl border-t border-white/10 px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
+              aria-label="Navegação inferior"
+            >
         <div className="flex items-center justify-evenly max-w-md mx-auto">
           <button
             type="button"
