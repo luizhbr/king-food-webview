@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 const MENU_URL = "https://kingfood.fe-v2.ola.click/products";
 const WA_URL = "https://wa.me/12673107535";
@@ -9,6 +9,7 @@ const MAPS_URL = "https://maps.app.goo.gl/GR2gpipSMqZdH9Xy5";
 const INSTAGRAM_URL = "https://instagram.com/king.food_delivery";
 const LOGO = "/logo-kingfood.png.png";
 const INSTALL_DISMISS_KEY = "kf_install_dismissed";
+const TZ = "America/New_York";
 
 type Tab = "home" | "menu" | "hours";
 
@@ -24,6 +25,7 @@ const SIDE_LINKS: {
   { label: "Fale conosco", icon: "📱", href: WA_URL },
 ];
 
+/** Local hours as displayed — parsed against America/New_York */
 const HOURS = [
   { day: 0, label: "Domingo", hours: "6:00 PM – 10:30 PM" },
   { day: 1, label: "Segunda-feira", hours: "7:00 PM – 10:00 PM" },
@@ -52,6 +54,97 @@ function isStandaloneMode(): boolean {
     // @ts-expect-error iOS Safari
     window.navigator.standalone === true
   );
+}
+
+/** Parse "7:00 PM" → minutes from midnight */
+function parseClock(token: string): number | null {
+  const m = token.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = m[3].toUpperCase();
+  if (ap === "PM" && h !== 12) h += 12;
+  if (ap === "AM" && h === 12) h = 0;
+  return h * 60 + min;
+}
+
+function getColumbusNow(): { day: number; minutes: number } {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: TZ,
+    weekday: "short",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const wd = get("weekday");
+  const dayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  let hour = parseInt(get("hour"), 10);
+  if (Number.isNaN(hour)) hour = 0;
+  // hour12:false can still yield 24 in some engines
+  if (hour === 24) hour = 0;
+  const minute = parseInt(get("minute"), 10) || 0;
+  return { day: dayMap[wd] ?? new Date().getDay(), minutes: hour * 60 + minute };
+}
+
+export type OpenStatus =
+  | { open: true; label: string; detail: string }
+  | { open: false; label: string; detail: string };
+
+function computeOpenStatus(): OpenStatus {
+  const { day, minutes } = getColumbusNow();
+  const row = HOURS.find((h) => h.day === day) ?? HOURS[0];
+  if (row.hours === "Fechado") {
+    // next open day
+    for (let i = 1; i <= 7; i++) {
+      const nd = (day + i) % 7;
+      const nr = HOURS.find((h) => h.day === nd)!;
+      if (nr.hours !== "Fechado") {
+        const start = nr.hours.split("–")[0]?.trim() ?? "";
+        return {
+          open: false,
+          label: "Fechado",
+          detail: i === 1 ? `Abre amanhã ${start}` : `Abre ${nr.label.split("-")[0]} ${start}`,
+        };
+      }
+    }
+    return { open: false, label: "Fechado", detail: "Veja horários" };
+  }
+  const [startTok, endTok] = row.hours.split("–").map((s) => s.trim());
+  const start = parseClock(startTok);
+  const end = parseClock(endTok);
+  if (start == null || end == null) {
+    return { open: false, label: "Horários", detail: row.hours };
+  }
+  if (minutes >= start && minutes < end) {
+    return { open: true, label: "Aberto agora", detail: `Fecha ${endTok}` };
+  }
+  if (minutes < start) {
+    return { open: false, label: "Fechado", detail: `Abre ${startTok}` };
+  }
+  // after close — find next
+  for (let i = 1; i <= 7; i++) {
+    const nd = (day + i) % 7;
+    const nr = HOURS.find((h) => h.day === nd)!;
+    if (nr.hours !== "Fechado") {
+      const ns = nr.hours.split("–")[0]?.trim() ?? "";
+      return {
+        open: false,
+        label: "Fechado",
+        detail: i === 1 ? `Abre amanhã ${ns}` : `Abre ${nr.label} ${ns}`,
+      };
+    }
+  }
+  return { open: false, label: "Fechado", detail: "Veja horários" };
 }
 
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -93,14 +186,14 @@ function InstallModal({
         <button
           type="button"
           onClick={onInstall}
-          className="mt-5 w-full rounded-2xl bg-[#FFD100] py-3.5 text-sm font-bold text-black shadow-lg shadow-[#FFD100]/20 active:scale-[0.98] transition"
+          className="mt-5 w-full min-h-[48px] rounded-2xl bg-[#FFD100] py-3.5 text-sm font-bold text-black shadow-lg shadow-[#FFD100]/20 active:scale-[0.98] transition"
         >
           Instalar agora
         </button>
         <button
           type="button"
           onClick={onDismiss}
-          className="mt-2 w-full py-2.5 text-sm font-medium text-white/40 hover:text-white/70 transition"
+          className="mt-2 w-full min-h-[44px] py-2.5 text-sm font-medium text-white/40 hover:text-white/70 transition"
         >
           Agora não
         </button>
@@ -115,26 +208,34 @@ export default function Home() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("home");
   const [iframeReady, setIframeReady] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [installPlatform, setInstallPlatform] = useState<"android" | "ios" | "desktop">("android");
   const [scrolled, setScrolled] = useState(false);
+  const [openStatus, setOpenStatus] = useState<OpenStatus>(() => computeOpenStatus());
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
   const loadingDone = useRef(false);
   const mainRef = useRef<HTMLElement>(null);
   const ctaPrimaryRef = useRef<HTMLButtonElement>(null);
-  const ctaSecondaryRef = useRef<HTMLAnchorElement>(null);
-  const today = new Date().getDay();
+  const today = useMemo(() => getColumbusNow().day, []);
 
-  const tryShowModal = useCallback(() => {
+  // Refresh open/closed every minute
+  useEffect(() => {
+    setOpenStatus(computeOpenStatus());
+    const id = window.setInterval(() => setOpenStatus(computeOpenStatus()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const tryShowInstallSoft = useCallback(() => {
     if (isStandaloneMode()) return;
     const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
     if (dismissed) return;
     if (!deferredPrompt.current && !window.__kfDeferredPrompt) return;
     setCanInstall(true);
-    if (loadingDone.current) setShowInstallModal(true);
+    // Soft: only banner, never auto-modal on first paint
   }, []);
 
   useEffect(() => {
@@ -142,27 +243,27 @@ export default function Home() {
     const safetyTimer = setTimeout(() => {
       loadingDone.current = true;
       setLoading(false);
-      if (isStandaloneMode()) return;
-      const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
-      if (!dismissed && (deferredPrompt.current || window.__kfDeferredPrompt)) {
-        setCanInstall(true);
-        setShowInstallModal(true);
-      }
     }, 1800);
 
-    // Fallback: show custom install banner after 3s if no beforeinstallprompt
+    // Install prompt delayed — don't interrupt first order intent (12s)
     const bannerTimer = setTimeout(() => {
       if (isStandaloneMode()) return;
       const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
       if (dismissed) return;
-      if (deferredPrompt.current || window.__kfDeferredPrompt) return;
+
+      if (deferredPrompt.current || window.__kfDeferredPrompt) {
+        setCanInstall(true);
+        setShowInstallBanner(true);
+        return;
+      }
 
       const ua = navigator.userAgent;
-      const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as Window & { MSStream?: unknown }).MSStream;
+      const isIOS =
+        /iPad|iPhone|iPod/.test(ua) && !(window as Window & { MSStream?: unknown }).MSStream;
       const isAndroid = /Android/.test(ua);
       setInstallPlatform(isIOS ? "ios" : isAndroid ? "android" : "desktop");
       setShowInstallBanner(true);
-    }, 3000);
+    }, 12_000);
 
     return () => {
       clearTimeout(logoTimer);
@@ -178,7 +279,6 @@ export default function Home() {
     };
   }, [drawerOpen, showInstallModal]);
 
-  // ESC fecha drawer / modal (a11y, sem mudar layout)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
@@ -216,20 +316,16 @@ export default function Home() {
     return () => el.removeEventListener("scroll", onScroll);
   }, [tab]);
 
-  // Alive CTA buttons: random autonomous movement + magnetic mouse effect
-  // Pauses when tab hidden or page not visible (battery/CPU)
+  // Subtle CTA motion — primary only
   useEffect(() => {
     if (tab !== "home") return;
-
-    const buttons = [ctaPrimaryRef.current, ctaSecondaryRef.current].filter(Boolean) as HTMLElement[];
-    if (buttons.length === 0) return;
-
+    const btn = ctaPrimaryRef.current;
+    if (!btn) return;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion) return;
-
     const isTouch = window.matchMedia("(pointer: coarse)").matches;
 
-    const states = buttons.map(() => ({
+    const s = {
       cx: 0,
       cy: 0,
       cs: 1,
@@ -242,59 +338,47 @@ export default function Home() {
       hovering: false,
       mx: 0,
       my: 0,
-    }));
+    };
 
-    const mouseHandlers = buttons.map((btn, i) => {
-      const onMove = (e: MouseEvent) => {
-        states[i].hovering = true;
-        const rect = btn.getBoundingClientRect();
-        states[i].mx = e.clientX - rect.left - rect.width / 2;
-        states[i].my = e.clientY - rect.top - rect.height / 2;
-      };
-      const onLeave = () => {
-        states[i].hovering = false;
-      };
-      if (!isTouch) {
-        btn.addEventListener("mousemove", onMove);
-        btn.addEventListener("mouseleave", onLeave);
-      }
-      return { onMove, onLeave };
-    });
+    const onMove = (e: MouseEvent) => {
+      s.hovering = true;
+      const rect = btn.getBoundingClientRect();
+      s.mx = e.clientX - rect.left - rect.width / 2;
+      s.my = e.clientY - rect.top - rect.height / 2;
+    };
+    const onLeave = () => {
+      s.hovering = false;
+    };
+    if (!isTouch) {
+      btn.addEventListener("mousemove", onMove);
+      btn.addEventListener("mouseleave", onLeave);
+    }
 
     let rafId = 0;
     let running = true;
-
     const animate = (time: number) => {
       if (!running) return;
       if (document.visibilityState === "hidden") {
         rafId = requestAnimationFrame(animate);
         return;
       }
-      buttons.forEach((btn, i) => {
-        const s = states[i];
-
-        if (s.hovering && !isTouch) {
-          s.tx = s.mx * 0.15;
-          s.ty = s.my * 0.2;
-          s.ts = 1.05;
-          s.tr = s.mx * 0.02;
-        } else {
-          if (time > s.nextChange) {
-            s.tx = (Math.random() - 0.5) * 10;
-            s.ty = (Math.random() - 0.5) * 8;
-            s.ts = 1 + Math.random() * 0.03;
-            s.tr = (Math.random() - 0.5) * 2;
-            s.nextChange = time + 1500 + Math.random() * 2000;
-          }
-        }
-
-        s.cx += (s.tx - s.cx) * 0.06;
-        s.cy += (s.ty - s.cy) * 0.06;
-        s.cs += (s.ts - s.cs) * 0.06;
-        s.cr += (s.tr - s.cr) * 0.06;
-
-        btn.style.transform = `translate(${s.cx}px, ${s.cy}px) scale(${s.cs}) rotate(${s.cr}deg)`;
-      });
+      if (s.hovering && !isTouch) {
+        s.tx = s.mx * 0.15;
+        s.ty = s.my * 0.2;
+        s.ts = 1.05;
+        s.tr = s.mx * 0.02;
+      } else if (time > s.nextChange) {
+        s.tx = (Math.random() - 0.5) * 8;
+        s.ty = (Math.random() - 0.5) * 6;
+        s.ts = 1 + Math.random() * 0.025;
+        s.tr = (Math.random() - 0.5) * 1.5;
+        s.nextChange = time + 1600 + Math.random() * 2000;
+      }
+      s.cx += (s.tx - s.cx) * 0.06;
+      s.cy += (s.ty - s.cy) * 0.06;
+      s.cs += (s.ts - s.cs) * 0.06;
+      s.cr += (s.tr - s.cr) * 0.06;
+      btn.style.transform = `translate(${s.cx}px, ${s.cy}px) scale(${s.cs}) rotate(${s.cr}deg)`;
       rafId = requestAnimationFrame(animate);
     };
     rafId = requestAnimationFrame(animate);
@@ -302,14 +386,10 @@ export default function Home() {
     return () => {
       running = false;
       cancelAnimationFrame(rafId);
-      buttons.forEach((btn) => {
-        btn.style.transform = "";
-      });
+      btn.style.transform = "";
       if (!isTouch) {
-        mouseHandlers.forEach(({ onMove, onLeave }, i) => {
-          buttons[i].removeEventListener("mousemove", onMove);
-          buttons[i].removeEventListener("mouseleave", onLeave);
-        });
+        btn.removeEventListener("mousemove", onMove);
+        btn.removeEventListener("mouseleave", onLeave);
       }
     };
   }, [tab]);
@@ -332,8 +412,7 @@ export default function Home() {
       deferredPrompt.current = evt;
       window.__kfDeferredPrompt = evt;
       setCanInstall(true);
-      setShowInstallBanner(false);
-      tryShowModal();
+      tryShowInstallSoft();
     };
 
     adoptPrompt(window.__kfDeferredPrompt ?? null);
@@ -355,7 +434,6 @@ export default function Home() {
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
     window.addEventListener("appinstalled", onInstalled);
 
-    // SW registration handled early in layout; keep a soft fallback
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.getRegistration().then((reg) => {
         if (!reg) {
@@ -371,7 +449,17 @@ export default function Home() {
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
       window.removeEventListener("appinstalled", onInstalled);
     };
-  }, [tryShowModal]);
+  }, [tryShowInstallSoft]);
+
+  // Iframe load timeout → show fallback
+  useEffect(() => {
+    if (tab !== "menu" || !menuMounted || iframeReady) return;
+    setIframeError(false);
+    const t = window.setTimeout(() => {
+      if (!iframeReady) setIframeError(true);
+    }, 12_000);
+    return () => window.clearTimeout(t);
+  }, [tab, menuMounted, iframeReady]);
 
   const handleInstall = async () => {
     const promptEvent =
@@ -388,28 +476,33 @@ export default function Home() {
         deferredPrompt.current = null;
         window.__kfDeferredPrompt = null;
         setCanInstall(false);
+        setShowInstallBanner(false);
       }
     } catch {
-      /* user cancelled / browser blocked */
+      /* cancelled */
     }
   };
 
   const dismissInstallModal = () => {
     sessionStorage.setItem(INSTALL_DISMISS_KEY, "1");
     setShowInstallModal(false);
+    setShowInstallBanner(false);
   };
 
   const openMenu = () => {
     setDrawerOpen(false);
     if (!menuMounted) {
       setIframeReady(false);
+      setIframeError(false);
       setMenuMounted(true);
     }
     setTab("menu");
   };
 
-  const goHome = () => {
-    setTab("home");
+  const goHome = () => setTab("home");
+  const goHours = () => {
+    setDrawerOpen(false);
+    setTab("hours");
   };
 
   const headerSubtitle =
@@ -434,7 +527,6 @@ export default function Home() {
             <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
           </div>
         </div>
-        <InstallModal open={showInstallModal} onInstall={handleInstall} onDismiss={dismissInstallModal} />
       </>
     );
   }
@@ -450,13 +542,12 @@ export default function Home() {
       <header
         className={`shrink-0 z-40 text-white border-b transition-all duration-300 ${scrolled || tab !== "home" ? "bg-black/60 backdrop-blur-md border-white/10" : "bg-transparent border-transparent"}`}
       >
-        <div className="flex items-center justify-between px-4 py-2 max-w-5xl mx-auto w-full">
-          <div className="flex items-center gap-3">
-            {/* Hamburger - mobile only */}
+        <div className="flex items-center justify-between px-4 py-2 max-w-5xl mx-auto w-full gap-2">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="md:hidden w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-xl hover:bg-white/10 transition active:scale-90"
+              className="md:hidden w-11 h-11 flex flex-col items-center justify-center gap-1.5 rounded-xl hover:bg-white/10 transition active:scale-90 shrink-0"
               aria-label="Abrir menu"
               aria-expanded={drawerOpen}
             >
@@ -467,41 +558,60 @@ export default function Home() {
             <button
               type="button"
               onClick={goHome}
-              className={`flex items-center gap-2.5 active:scale-95 transition-all duration-300 ${scrolled || tab !== "home" ? "opacity-100" : "opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto"}`}
+              className={`flex items-center gap-2.5 active:scale-95 transition-all duration-300 min-w-0 ${scrolled || tab !== "home" ? "opacity-100" : "opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto"}`}
             >
               <img
                 src={LOGO}
                 alt="King Food"
-                className="w-8 h-8 object-contain rounded-lg"
+                className="w-8 h-8 object-contain rounded-lg shrink-0"
                 decoding="async"
               />
-              <div className="leading-tight text-left">
-                <p className="font-bold text-sm tracking-tight">King Food</p>
-                <p className="text-[10px] text-white/50">{headerSubtitle}</p>
+              <div className="leading-tight text-left min-w-0">
+                <p className="font-bold text-sm tracking-tight truncate">King Food</p>
+                <p className="text-[10px] text-white/50 truncate">{headerSubtitle}</p>
               </div>
             </button>
           </div>
 
-          {/* Inline nav - desktop only */}
+          {/* Open/closed badge — always visible on mobile home */}
+          <button
+            type="button"
+            onClick={goHours}
+            className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-bold border transition active:scale-95 ${
+              openStatus.open
+                ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-300"
+                : "bg-white/10 border-white/15 text-white/70"
+            }`}
+            aria-label={`${openStatus.label}. ${openStatus.detail}`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${openStatus.open ? "bg-emerald-400 animate-pulse" : "bg-white/40"}`}
+              aria-hidden
+            />
+            <span className="hidden xs:inline sm:inline">{openStatus.label}</span>
+            <span className="sm:hidden">{openStatus.open ? "Aberto" : "Fechado"}</span>
+          </button>
+
+          {/* Inline nav - desktop */}
           <nav className="hidden md:flex items-center gap-1" aria-label="Principal">
             <button
               type="button"
               onClick={goHome}
-              className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${tab === "home" ? "text-[#FFD100]" : "text-white/60 hover:text-white hover:bg-white/10"}`}
+              className={`min-h-[44px] px-3 py-2 rounded-lg text-sm font-semibold transition ${tab === "home" ? "text-[#FFD100]" : "text-white/60 hover:text-white hover:bg-white/10"}`}
             >
               Início
             </button>
             <button
               type="button"
               onClick={openMenu}
-              className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${tab === "menu" ? "text-[#FFD100]" : "text-white/60 hover:text-white hover:bg-white/10"}`}
+              className={`min-h-[44px] px-3 py-2 rounded-lg text-sm font-semibold transition ${tab === "menu" ? "text-[#FFD100]" : "text-white/60 hover:text-white hover:bg-white/10"}`}
             >
               Cardápio
             </button>
             <button
               type="button"
-              onClick={() => setTab("hours")}
-              className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${tab === "hours" ? "text-[#FFD100]" : "text-white/60 hover:text-white hover:bg-white/10"}`}
+              onClick={goHours}
+              className={`min-h-[44px] px-3 py-2 rounded-lg text-sm font-semibold transition ${tab === "hours" ? "text-[#FFD100]" : "text-white/60 hover:text-white hover:bg-white/10"}`}
             >
               Horários
             </button>
@@ -509,7 +619,7 @@ export default function Home() {
               href={GROUP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-2 rounded-lg text-sm font-semibold text-white/60 hover:text-white hover:bg-white/10 transition"
+              className="min-h-[44px] px-3 py-2 rounded-lg text-sm font-semibold text-white/60 hover:text-white hover:bg-white/10 transition inline-flex items-center"
             >
               Grupo
             </a>
@@ -517,7 +627,7 @@ export default function Home() {
               href={INSTAGRAM_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-2 rounded-lg text-sm font-semibold text-white/60 hover:text-white hover:bg-white/10 transition"
+              className="min-h-[44px] px-3 py-2 rounded-lg text-sm font-semibold text-white/60 hover:text-white hover:bg-white/10 transition inline-flex items-center"
             >
               Instagram
             </a>
@@ -525,21 +635,11 @@ export default function Home() {
               href={WA_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-1 px-4 py-2 rounded-lg text-sm font-bold bg-[#25D366] text-white hover:bg-[#25D366]/90 transition"
+              className="ml-1 min-h-[44px] px-4 py-2 rounded-lg text-sm font-bold bg-[#25D366] text-white hover:bg-[#25D366]/90 transition inline-flex items-center"
             >
               WhatsApp
             </a>
           </nav>
-
-          {tab !== "home" && (
-            <button
-              type="button"
-              onClick={goHome}
-              className="md:hidden text-xs font-semibold text-white/70 px-3 py-1.5 rounded-lg hover:bg-white/10 active:scale-95 transition"
-            >
-              ← Início
-            </button>
-          )}
         </div>
       </header>
 
@@ -567,22 +667,30 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setDrawerOpen(false)}
-            className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition active:scale-90"
+            className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition active:scale-90"
             aria-label="Fechar"
           >
             ✕
           </button>
         </div>
         <nav className="py-2" aria-label="Menu lateral">
+          <button
+            type="button"
+            onClick={() => {
+              setDrawerOpen(false);
+              openMenu();
+            }}
+            className="w-full text-left px-5 py-4 text-sm font-medium text-white/80 hover:bg-[#FFD100] hover:text-black border-b border-white/5 transition"
+          >
+            <span className="mr-3">🛒</span>
+            Pedir agora
+          </button>
           {SIDE_LINKS.map((link) =>
             link.action === "hours" ? (
               <button
                 key={link.label}
                 type="button"
-                onClick={() => {
-                  setDrawerOpen(false);
-                  setTab("hours");
-                }}
+                onClick={goHours}
                 className="w-full text-left px-5 py-4 text-sm font-medium text-white/80 hover:bg-[#FFD100] hover:text-black border-b border-white/5 transition active:bg-[#FFD100]/80"
               >
                 <span className="mr-3">{link.icon}</span>
@@ -603,23 +711,52 @@ export default function Home() {
             )
           )}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 space-y-2">
+          <p
+            className={`text-xs text-center font-semibold ${openStatus.open ? "text-emerald-400" : "text-white/50"}`}
+          >
+            {openStatus.open ? "● " : "○ "}
+            {openStatus.label} · {openStatus.detail}
+          </p>
           <p className="text-xs text-white/30 text-center">Entrega em até 40 min • Columbus, OH</p>
         </div>
       </aside>
 
-      {/* Menu tab — keep iframe mounted after first open for instant return */}
+      {/* Menu tab — keep iframe mounted */}
       <div
         className={`flex-1 relative min-h-0 bg-white max-w-5xl mx-auto w-full md:pb-0 pb-14 ${tab === "menu" ? "" : "hidden"}`}
         aria-hidden={tab !== "menu"}
       >
         {menuMounted && (
           <>
-            {!iframeReady && (
+            {(!iframeReady || iframeError) && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black px-6">
-                <div className="w-10 h-10 border-4 border-[#FFD100] border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm text-white/60">Carregando cardápio...</p>
-                <a href={MENU_URL} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-[#FFD100] underline">
+                {!iframeError ? (
+                  <>
+                    <div className="w-10 h-10 border-4 border-[#FFD100] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm text-white/60">Carregando cardápio...</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-white/80 text-center">
+                      O cardápio demorou para abrir neste aparelho.
+                    </p>
+                    <a
+                      href={MENU_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="min-h-[48px] inline-flex items-center justify-center rounded-2xl bg-[#FFD100] px-6 text-sm font-bold text-black"
+                    >
+                      Abrir cardápio
+                    </a>
+                  </>
+                )}
+                <a
+                  href={MENU_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-semibold text-[#FFD100] underline min-h-[44px] inline-flex items-center"
+                >
                   Abrir em nova aba
                 </a>
               </div>
@@ -631,7 +768,10 @@ export default function Home() {
               allow="payment"
               loading="eager"
               referrerPolicy="no-referrer-when-downgrade"
-              onLoad={() => setIframeReady(true)}
+              onLoad={() => {
+                setIframeReady(true);
+                setIframeError(false);
+              }}
             />
           </>
         )}
@@ -639,12 +779,24 @@ export default function Home() {
 
       {tab === "hours" ? (
         <main className="flex-1 overflow-y-auto px-4 py-5 max-w-2xl mx-auto w-full md:pb-6 pb-14">
-          <div className="flex items-center gap-2 mb-5">
-            <span className="text-2xl" aria-hidden>
-              🕐
+          <div className="flex items-center justify-between gap-3 mb-5">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl" aria-hidden>
+                🕐
+              </span>
+              <h2 className="text-lg font-extrabold text-white">Horários e entrega</h2>
+            </div>
+            <span
+              className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold border ${
+                openStatus.open
+                  ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-300"
+                  : "bg-white/10 border-white/15 text-white/70"
+              }`}
+            >
+              {openStatus.label}
             </span>
-            <h2 className="text-lg font-extrabold text-white">Horários e entrega</h2>
           </div>
+          <p className="text-sm text-white/50 mb-4">{openStatus.detail} · horário de Columbus, OH</p>
           <ul className="rounded-2xl border border-white/10 overflow-hidden divide-y divide-white/5">
             {HOURS.map((row) => {
               const isToday = row.day === today;
@@ -652,7 +804,7 @@ export default function Home() {
               return (
                 <li
                   key={row.day}
-                  className={`flex items-center justify-between gap-3 px-4 py-3.5 ${isToday ? "bg-[#FFD100]/10" : "bg-transparent"}`}
+                  className={`flex items-center justify-between gap-3 px-4 py-3.5 min-h-[48px] ${isToday ? "bg-[#FFD100]/10" : "bg-transparent"}`}
                 >
                   <span className={`text-sm ${isToday ? "font-bold text-[#FFD100]" : "font-medium text-white/80"}`}>
                     {row.label}
@@ -674,19 +826,23 @@ export default function Home() {
               href={MAPS_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-flex text-sm font-semibold text-[#FFD100]"
+              className="mt-3 inline-flex min-h-[44px] items-center text-sm font-semibold text-[#FFD100]"
             >
               Ver no Google Maps →
             </a>
           </div>
+          <button
+            type="button"
+            onClick={openMenu}
+            className="mt-4 w-full min-h-[52px] rounded-2xl bg-[#FFD100] text-black font-bold text-base active:scale-[0.98] transition"
+          >
+            {openStatus.open ? "Pedir agora" : "Ver cardápio"}
+          </button>
         </main>
       ) : tab === "home" ? (
-        /* Home tab */
         <main ref={mainRef} className="flex-1 overflow-y-auto md:pb-6 pb-14">
           <div className="max-w-sm md:max-w-4xl mx-auto flex flex-col md:flex-row md:items-center md:gap-12 text-center md:text-left px-5 pt-6 pb-4 md:pt-16">
-            {/* Left: logo + title + CTA */}
-            <div className="flex flex-col items-center md:items-start flex-1">
-              {/* Logo */}
+            <div className="flex flex-col items-center md:items-start flex-1 w-full">
               <img
                 src={LOGO}
                 alt="King Food"
@@ -695,74 +851,76 @@ export default function Home() {
                 fetchPriority="high"
               />
 
-              {/* Title */}
               <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-1 tracking-tight">King Food</h1>
-              <p className="text-sm md:text-base text-white/50 mb-3">Açaí Premium • Columbus, OH</p>
+              <p className="text-sm md:text-base text-white/50 mb-2">Açaí Premium • Columbus, OH</p>
 
-              {/* Description */}
+              <p
+                className={`text-xs font-semibold mb-3 ${openStatus.open ? "text-emerald-400" : "text-white/50"}`}
+              >
+                {openStatus.open ? "● " : "○ "}
+                {openStatus.label}
+                {openStatus.detail ? ` · ${openStatus.detail}` : ""}
+              </p>
+
               <p className="text-sm md:text-base text-white/70 leading-relaxed mb-5 max-w-md">
                 Açaí brasileiro feito com ingredientes premium. Delivery em Columbus.
               </p>
 
-              {/* Primary CTA */}
+              {/* Primary CTA only */}
               <button
                 type="button"
                 onClick={openMenu}
                 ref={ctaPrimaryRef}
-                className="w-full md:w-auto md:min-w-[220px] bg-[#FFD100] hover:bg-[#FFD100]/90 text-black font-bold py-3.5 rounded-2xl text-base shadow-lg shadow-[#FFD100]/20 active:scale-[0.98] transition will-change-transform"
+                className="w-full md:w-auto md:min-w-[240px] min-h-[52px] bg-[#FFD100] hover:bg-[#FFD100]/90 text-black font-bold py-3.5 rounded-2xl text-base shadow-lg shadow-[#FFD100]/20 active:scale-[0.98] transition will-change-transform"
               >
-                Ver cardápio →
+                {openStatus.open ? "Pedir agora →" : "Ver cardápio →"}
               </button>
 
-              {/* Secondary CTA */}
+              {/* Secondary — text link, not competing button */}
               <a
                 href={GROUP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                ref={ctaSecondaryRef}
-                className="w-full md:w-auto md:min-w-[220px] mt-2.5 border border-white/20 text-white font-bold py-3 rounded-2xl text-base text-center hover:bg-white/5 active:scale-[0.98] transition will-change-transform"
+                className="mt-3 min-h-[44px] inline-flex items-center text-sm font-semibold text-white/55 hover:text-white/85 underline-offset-4 hover:underline transition"
               >
-                Entrar no grupo
+                Entrar no grupo do WhatsApp
               </a>
 
-              {/* Install */}
               {canInstall && (
                 <button
                   type="button"
                   onClick={() => setShowInstallModal(true)}
-                  className="mt-2 text-sm font-medium text-white/40 hover:text-white/70 py-1.5 transition"
+                  className="mt-2 min-h-[44px] text-sm font-medium text-white/40 hover:text-white/70 py-1.5 transition"
                 >
                   + Instalar app
                 </button>
               )}
             </div>
 
-            {/* Right: info cards (desktop only) */}
+            {/* Desktop info cards */}
             <div className="hidden md:flex flex-col gap-4 flex-1 mt-0">
-              {/* Google rating */}
               <a
                 href={MAPS_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 active:scale-[0.98] transition"
+                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 active:scale-[0.98] transition min-h-[72px]"
               >
                 <div className="shrink-0 w-10 h-10 rounded-full border border-white/10 flex items-center justify-center">
                   <span className="text-lg font-bold text-[#4285F4]">G</span>
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white">Google</p>
-                  <p className="text-sm text-[#FFD100]">★★★★★ 5.0</p>
-                  <p className="text-xs text-white/40">Ver no Google Maps</p>
+                  <p className="text-sm font-bold text-white">Google Maps</p>
+                  <p className="text-sm text-[#FFD100]">Ver avaliações reais →</p>
+                  <p className="text-xs text-white/40">Columbus, OH</p>
                 </div>
               </a>
 
-              {/* Contact cards */}
               <div className="grid grid-cols-2 gap-3">
                 <a
                   href={WA_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition"
+                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
                 >
                   <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
                   <div>
@@ -774,7 +932,7 @@ export default function Home() {
                   href={INSTAGRAM_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition"
+                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
                 >
                   <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="url(#ig-grad)" strokeWidth="2">
                     <defs>
@@ -795,54 +953,53 @@ export default function Home() {
                 </a>
               </div>
 
-              {/* Hours summary */}
               <button
                 type="button"
-                onClick={() => setTab("hours")}
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 active:scale-[0.98] transition text-left"
+                onClick={goHours}
+                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 active:scale-[0.98] transition text-left min-h-[72px]"
               >
                 <span className="text-2xl" aria-hidden>
                   🕐
                 </span>
                 <div>
                   <p className="text-sm font-bold text-white">Horários e entrega</p>
-                  <p className="text-xs text-white/40">Em até 40 min • Columbus, OH</p>
+                  <p className="text-xs text-white/40">
+                    {openStatus.label} · em até 40 min · Columbus, OH
+                  </p>
                 </div>
               </button>
             </div>
           </div>
 
-          {/* Mobile-only info cards (below CTAs) */}
+          {/* Mobile cards */}
           <div className="md:hidden">
-            {/* Google rating */}
             <div className="w-full mt-5 text-left px-5">
               <h2 className="text-sm font-extrabold text-white mb-2.5">Avaliações</h2>
               <a
                 href={MAPS_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 active:scale-[0.98] transition"
+                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 active:scale-[0.98] transition min-h-[64px]"
               >
                 <div className="shrink-0 w-9 h-9 rounded-full border border-white/10 flex items-center justify-center">
                   <span className="text-base font-bold text-[#4285F4]">G</span>
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white">Google</p>
-                  <p className="text-sm text-[#FFD100]">★★★★★ 5.0</p>
-                  <p className="text-xs text-white/40">Ver no Google Maps</p>
+                  <p className="text-sm font-bold text-white">Google Maps</p>
+                  <p className="text-sm text-[#FFD100]">Ver avaliações reais →</p>
+                  <p className="text-xs text-white/40">Columbus, OH</p>
                 </div>
               </a>
             </div>
 
-            {/* Contact links */}
-            <div className="w-full mt-4 text-left px-5">
+            <div className="w-full mt-4 text-left px-5 pb-4">
               <h2 className="text-sm font-extrabold text-white mb-2.5">Contato</h2>
               <div className="grid grid-cols-2 gap-3">
                 <a
                   href={WA_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition"
+                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
                 >
                   <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
                   <div>
@@ -854,7 +1011,7 @@ export default function Home() {
                   href={INSTAGRAM_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition"
+                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
                 >
                   <svg
                     className="w-5 h-5 shrink-0"
@@ -887,34 +1044,31 @@ export default function Home() {
 
       <InstallModal open={showInstallModal} onInstall={handleInstall} onDismiss={dismissInstallModal} />
 
-      {/* Custom install banner (fallback for non-Chrome browsers) */}
-      {showInstallBanner && !showInstallModal && (
-        <div className="fixed bottom-0 left-0 right-0 z-[90] md:bottom-0 px-4 pb-16 md:pb-4">
-          <div className="mx-auto max-w-sm rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl p-4 shadow-2xl flex items-center gap-3">
-            <div className="shrink-0 w-11 h-11 rounded-xl bg-[#FFD100] flex items-center justify-center">
-              <img src={LOGO} alt="" className="w-8 h-8 object-contain" decoding="async" />
+      {/* Soft install banner — delayed, bottom, not blocking CTA */}
+      {showInstallBanner && !showInstallModal && tab === "home" && (
+        <div className="fixed bottom-14 md:bottom-4 left-0 right-0 z-[90] px-4 pointer-events-none">
+          <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl p-3 shadow-2xl flex items-center gap-3">
+            <div className="shrink-0 w-10 h-10 rounded-xl bg-[#FFD100] flex items-center justify-center">
+              <img src={LOGO} alt="" className="w-7 h-7 object-contain" decoding="async" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white">Instale o King Food</p>
               <p className="text-xs text-white/50 leading-snug">
                 {installPlatform === "ios"
-                  ? "Toque em Compartilhar → Adicionar à Tela de Início"
-                  : installPlatform === "android"
-                    ? "Adicione à tela inicial para acesso rápido"
-                    : "Instale como app no seu navegador"}
+                  ? "Compartilhar → Tela de Início"
+                  : "Acesso rápido na tela inicial"}
               </p>
             </div>
             <button
               type="button"
               onClick={() => {
-                if (installPlatform === "android" && deferredPrompt.current) {
+                if (deferredPrompt.current || window.__kfDeferredPrompt) {
                   handleInstall();
                 } else {
-                  setShowInstallBanner(false);
-                  sessionStorage.setItem(INSTALL_DISMISS_KEY, "1");
+                  setShowInstallModal(true);
                 }
               }}
-              className="shrink-0 rounded-xl bg-[#FFD100] px-3 py-2 text-xs font-bold text-black active:scale-95 transition"
+              className="shrink-0 min-h-[40px] rounded-xl bg-[#FFD100] px-3 py-2 text-xs font-bold text-black active:scale-95 transition"
             >
               {installPlatform === "ios" ? "Ver" : "Instalar"}
             </button>
@@ -924,7 +1078,7 @@ export default function Home() {
                 setShowInstallBanner(false);
                 sessionStorage.setItem(INSTALL_DISMISS_KEY, "1");
               }}
-              className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white/30 hover:text-white/60 transition"
+              className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white/30 hover:text-white/60 transition"
               aria-label="Fechar"
             >
               ✕
@@ -933,38 +1087,19 @@ export default function Home() {
         </div>
       )}
 
-      {/* Floating WhatsApp - mobile only */}
-      <a
-        href={WA_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="md:hidden fixed z-[45] right-4 bottom-16 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#25D366]/90 text-white shadow-lg shadow-[#25D366]/30 flex items-center justify-center active:scale-90 transition"
-        aria-label="WhatsApp"
-      >
-        <WhatsAppIcon className="w-7 h-7" />
-      </a>
-
-      {/* Bottom nav - mobile only, fixed at bottom */}
+      {/* Bottom nav — 3 tabs, no FAB overlay */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-black/80 backdrop-blur-xl border-t border-white/10 px-4 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-black/80 backdrop-blur-xl border-t border-white/10 px-2 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
         aria-label="Navegação inferior"
       >
         <div className="flex items-center justify-evenly max-w-md mx-auto">
           <button
             type="button"
             onClick={goHome}
-            className={`flex flex-col items-center gap-0.5 min-w-[80px] py-1 rounded-lg transition active:scale-90 ${tab === "home" ? "text-[#FFD100]" : "text-white/40"}`}
+            className={`flex flex-col items-center justify-center gap-0.5 min-w-[88px] min-h-[52px] py-1 rounded-lg transition active:scale-90 ${tab === "home" ? "text-[#FFD100]" : "text-white/40"}`}
             aria-current={tab === "home" ? "page" : undefined}
           >
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 12l9-9 9 9" />
               <path d="M5 10v10h14V10" />
             </svg>
@@ -973,24 +1108,28 @@ export default function Home() {
           <button
             type="button"
             onClick={openMenu}
-            className={`flex flex-col items-center gap-0.5 min-w-[80px] py-1 rounded-lg transition active:scale-90 ${tab === "menu" ? "text-[#FFD100]" : "text-white/40"}`}
+            className={`flex flex-col items-center justify-center gap-0.5 min-w-[88px] min-h-[52px] py-1 rounded-lg transition active:scale-90 ${tab === "menu" ? "text-[#FFD100]" : "text-white/40"}`}
             aria-current={tab === "menu" ? "page" : undefined}
           >
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="4" y="3" width="16" height="18" rx="2" />
               <line x1="8" y1="8" x2="16" y2="8" />
               <line x1="8" y1="12" x2="16" y2="12" />
               <line x1="8" y1="16" x2="13" y2="16" />
             </svg>
             <span className="text-[10px] font-semibold">Cardápio</span>
+          </button>
+          <button
+            type="button"
+            onClick={goHours}
+            className={`flex flex-col items-center justify-center gap-0.5 min-w-[88px] min-h-[52px] py-1 rounded-lg transition active:scale-90 ${tab === "hours" ? "text-[#FFD100]" : "text-white/40"}`}
+            aria-current={tab === "hours" ? "page" : undefined}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <polyline points="12 7 12 12 15 14" />
+            </svg>
+            <span className="text-[10px] font-semibold">Horários</span>
           </button>
         </div>
       </nav>
