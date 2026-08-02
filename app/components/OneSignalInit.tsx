@@ -62,8 +62,7 @@ export default function OneSignalInit() {
           serviceWorkerPath: "sw.js",
           serviceWorkerParam: { scope: "/" },
           allowLocalhostAsSecureOrigin: true,
-          notifyButton: { enable: false },
-        } as Parameters<OS["init"]>[0]);
+        } as unknown as Parameters<OS["init"]>[0]);
 
         if (cancelled) return;
         osRef.current = OS;
@@ -113,8 +112,7 @@ export default function OneSignalInit() {
           serviceWorkerPath: "sw.js",
           serviceWorkerParam: { scope: "/" },
           allowLocalhostAsSecureOrigin: true,
-          notifyButton: { enable: false },
-        } as Parameters<OS["init"]>[0]);
+        } as unknown as Parameters<OS["init"]>[0]);
         osRef.current = OS;
       }
 
