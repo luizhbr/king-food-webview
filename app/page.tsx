@@ -190,6 +190,76 @@ function detectInstallPlatform(): "android" | "ios" | "desktop" {
   return "desktop";
 }
 
+/** Corpinhos de açaí — SVG leve (sem imagem externa) */
+function AcaiBerry({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="36"
+      height="40"
+      viewBox="0 0 36 40"
+      fill="none"
+      aria-hidden
+    >
+      {/* tigela */}
+      <ellipse cx="18" cy="30" rx="14" ry="6" fill="#3D1F14" />
+      <path
+        d="M6 28c0 6.6 5.4 10 12 10s12-3.4 12-10H6z"
+        fill="#5C2E1F"
+      />
+      {/* açaí */}
+      <ellipse cx="18" cy="22" rx="13" ry="10" fill="#4A0E6B" />
+      <ellipse cx="18" cy="20" rx="11" ry="8" fill="#6B1B8C" />
+      {/* brilho */}
+      <ellipse cx="13" cy="17" rx="3.2" ry="2" fill="#9B4DCA" opacity="0.85" />
+      {/* granola */}
+      <circle cx="12" cy="23" r="1.3" fill="#FFD100" />
+      <circle cx="17" cy="25" r="1.1" fill="#E8A317" />
+      <circle cx="22" cy="22" r="1.2" fill="#FFD100" />
+      <circle cx="20" cy="26" r="0.9" fill="#C4780A" />
+      <circle cx="15" cy="21" r="0.85" fill="#FFD100" />
+      {/* banana */}
+      <path
+        d="M24 16c2.5 0 4 2 3.2 4.2-1.2.2-2.4-.4-3.4-1.4-.6-1.2-.6-2.4.2-2.8z"
+        fill="#FFE566"
+      />
+    </svg>
+  );
+}
+
+function SplashScreen({ exiting }: { exiting: boolean }) {
+  return (
+    <div
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center kf-splash ${exiting ? "kf-splash-exiting" : ""}`}
+      role="status"
+      aria-live="polite"
+      aria-label="Carregando King Food"
+    >
+      <div className="flex flex-col items-center px-6">
+        <img
+          src={LOGO}
+          alt="King Food"
+          className="w-40 h-40 sm:w-44 sm:h-44 object-contain"
+          fetchPriority="high"
+          decoding="async"
+        />
+
+        <div className="mt-7 flex items-end justify-center gap-2.5 h-12" aria-hidden>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span key={i} className="kf-acai inline-flex">
+              <AcaiBerry />
+            </span>
+          ))}
+        </div>
+
+        <div className="mt-6 w-36 h-1 rounded-full bg-black/15 overflow-hidden">
+          <div className="kf-splash-bar h-full w-full rounded-full bg-black/70" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function InstallModal({
   open,
   onInstall,
@@ -285,20 +355,20 @@ function InstallModal({
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
-  const [showLogo, setShowLogo] = useState(false);
+  const [splashExiting, setSplashExiting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("home");
   const [iframeReady, setIframeReady] = useState(false);
   const [iframeError, setIframeError] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
-    const [hasNativePrompt, setHasNativePrompt] = useState(false);
-    const [showInstallModal, setShowInstallModal] = useState(false);
-    const [showInstallBanner, setShowInstallBanner] = useState(false);
-    const [installPlatform, setInstallPlatform] = useState<"android" | "ios" | "desktop">("android");
-    const [scrolled, setScrolled] = useState(false);
-    const [openStatus, setOpenStatus] = useState<OpenStatus>(() => computeOpenStatus());
-    const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
+  const [hasNativePrompt, setHasNativePrompt] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [installPlatform, setInstallPlatform] = useState<"android" | "ios" | "desktop">("android");
+  const [scrolled, setScrolled] = useState(false);
+  const [openStatus, setOpenStatus] = useState<OpenStatus>(() => computeOpenStatus());
+  const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
   const loadingDone = useRef(false);
   const mainRef = useRef<HTMLElement>(null);
   const ctaPrimaryRef = useRef<HTMLButtonElement>(null);
@@ -312,44 +382,86 @@ export default function Home() {
   }, []);
 
   const tryShowInstallSoft = useCallback(() => {
+    if (isStandaloneMode()) return;
+    const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
+    if (dismissed) return;
+    setCanInstall(true);
+  }, []);
+
+  // Splash inteligente: min 700ms (cena dos açaís), max 1.6s; retorno quente mais curto
+  useEffect(() => {
+    if (loadingDone.current) return;
+
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const warm =
+      typeof sessionStorage !== "undefined" && sessionStorage.getItem("kf_splash_seen") === "1";
+
+    const minMs = reduceMotion ? 200 : warm ? 450 : 700;
+    const maxMs = reduceMotion ? 400 : warm ? 900 : 1600;
+    const started = performance.now();
+    let finished = false;
+    let exitTimer: number | undefined;
+    let maxTimer: number | undefined;
+    let minTimer: number | undefined;
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      loadingDone.current = true;
+      try {
+        sessionStorage.setItem("kf_splash_seen", "1");
+      } catch {
+        /* private mode */
+      }
+      setSplashExiting(true);
+      exitTimer = window.setTimeout(() => setLoading(false), reduceMotion ? 80 : 280);
+    };
+
+    minTimer = window.setTimeout(() => {
+      // Após mínimo: se documento já ok, sai; senão espera max
+      if (document.readyState === "complete") finish();
+    }, minMs);
+
+    maxTimer = window.setTimeout(finish, maxMs);
+
+    const onReady = () => {
+      const elapsed = performance.now() - started;
+      const wait = Math.max(0, minMs - elapsed);
+      window.setTimeout(finish, wait);
+    };
+
+    if (document.readyState === "complete") {
+      // still honor minMs via minTimer
+    } else {
+      window.addEventListener("load", onReady, { once: true });
+    }
+
+    // Install prompt delayed — don't interrupt first order intent (12s)
+    const bannerTimer = window.setTimeout(() => {
       if (isStandaloneMode()) return;
       const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
       if (dismissed) return;
+
+      const plat = detectInstallPlatform();
+      setInstallPlatform(plat);
       setCanInstall(true);
-      // Soft: only banner, never auto-modal on first paint
-    }, []);
 
-  useEffect(() => {
-    const logoTimer = setTimeout(() => setShowLogo(true), 100);
-    const safetyTimer = setTimeout(() => {
-      loadingDone.current = true;
-      setLoading(false);
-    }, 1800);
-
-    // Install prompt delayed — don't interrupt first order intent (12s)
-        const bannerTimer = setTimeout(() => {
-          if (isStandaloneMode()) return;
-          const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
-          if (dismissed) return;
-
-          const plat = detectInstallPlatform();
-          setInstallPlatform(plat);
-          setCanInstall(true);
-
-          if (deferredPrompt.current || window.__kfDeferredPrompt) {
-            setHasNativePrompt(true);
-            setShowInstallBanner(true);
-            return;
-          }
-
-          // iOS / browsers without BIP: still show soft banner with instructions
-          setShowInstallBanner(true);
-        }, 12_000);
+      if (deferredPrompt.current || window.__kfDeferredPrompt) {
+        setHasNativePrompt(true);
+        setShowInstallBanner(true);
+        return;
+      }
+      setShowInstallBanner(true);
+    }, 12_000);
 
     return () => {
-      clearTimeout(logoTimer);
-      clearTimeout(safetyTimer);
-      clearTimeout(bannerTimer);
+      window.clearTimeout(minTimer);
+      window.clearTimeout(maxTimer);
+      window.clearTimeout(exitTimer);
+      window.clearTimeout(bannerTimer);
+      window.removeEventListener("load", onReady);
     };
   }, []);
 
@@ -609,36 +721,14 @@ export default function Home() {
   const headerSubtitle =
     tab === "menu" ? "Cardápio" : tab === "hours" ? "Horários" : "Açaí BR · Delivery";
 
-  if (loading) {
-    return (
-      <>
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#FFD100]">
-                  <div
-                    className={`flex flex-col items-center transition-all duration-700 ease-out ${showLogo ? "opacity-100 scale-100" : "opacity-0 scale-90"}`}
-                  >
-                    <img
-                      src={LOGO}
-                      alt="King Food"
-                      className="w-44 h-44 object-contain"
-                      fetchPriority="high"
-                      decoding="async"
-                    />
-                  </div>
-                  <div className={`mt-8 transition-opacity duration-500 delay-300 ${showLogo ? "opacity-100" : "opacity-0"}`}>
-                    <div className="w-10 h-10 border-4 border-black/80 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                </div>
-      </>
-    );
-  }
-
   return (
-    <div
-      className="flex flex-col h-screen overflow-hidden relative"
-      style={{
-        background: `linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.15) 100%), url('/bg-acai.jpg') center/cover no-repeat`,
-      }}
-    >
+      <div
+        className="flex flex-col h-screen overflow-hidden relative"
+        style={{
+          background: `linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.15) 100%), url('/bg-acai.jpg') center/cover no-repeat`,
+        }}
+      >
+        {loading && <SplashScreen exiting={splashExiting} />}
       {/* Header */}
       <header
         className={`shrink-0 z-40 text-white border-b transition-all duration-300 ${scrolled || tab !== "home" ? "bg-black/60 backdrop-blur-md border-white/10" : "bg-transparent border-transparent"}`}
