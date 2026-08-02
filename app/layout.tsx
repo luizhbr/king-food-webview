@@ -4,9 +4,9 @@ import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://kingfood.online"),
-  title: "King Food | Açaí Premium Delivery em Columbus, OH",
+  title: "King Food | Açaí BR da saudade em Columbus, OH",
   description:
-    "O verdadeiro sabor do Brasil em Columbus. Açaís premium, combos e delivery rápido. Peça agora no King Food.",
+    "Feito pra quem sente falta do Brasil. Açaí de verdade e delivery rápido em Columbus. Peça agora no King Food.",
   applicationName: "King Food",
   authors: [{ name: "King Food" }],
   keywords: [
@@ -32,9 +32,9 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     url: "https://kingfood.online",
     siteName: "King Food",
-    title: "King Food | Açaí Premium Delivery",
+    title: "King Food | Açaí BR da saudade",
     description:
-      "Açaís premium, combos e delivery rápido em Columbus, Ohio. Sabor brasileiro de verdade.",
+      "Feito pra quem sente falta do Brasil. Açaí de verdade, delivery em Columbus.",
     images: [
       {
         url: "/logo-kingfood.png.png",
@@ -46,8 +46,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "King Food | Açaí Premium Delivery",
-    description: "O verdadeiro sabor do Brasil em Columbus. Peça agora.",
+    title: "King Food | Açaí BR da saudade",
+    description: "Açaí de verdade em Columbus. Peça agora.",
     images: ["/logo-kingfood.png.png"],
   },
 };

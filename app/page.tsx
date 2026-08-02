@@ -19,7 +19,7 @@ const SIDE_LINKS: {
   action?: "hours";
   href?: string;
 }[] = [
-  { label: "Entrar no grupo", icon: "💬", href: GROUP_URL },
+  { label: "Grupo WhatsApp", icon: "💬", href: GROUP_URL },
   { label: "Instagram", icon: "📸", href: INSTAGRAM_URL },
   { label: "Horários e entrega", icon: "🕐", action: "hours" },
   { label: "Fale conosco", icon: "📱", href: WA_URL },
@@ -530,7 +530,7 @@ export default function Home() {
   };
 
   const headerSubtitle =
-    tab === "menu" ? "Cardápio" : tab === "hours" ? "Horários" : "Açaí • Delivery";
+    tab === "menu" ? "Cardápio" : tab === "hours" ? "Horários" : "Açaí BR · Delivery";
 
   if (loading) {
     return (
@@ -742,7 +742,7 @@ export default function Home() {
             {openStatus.open ? "● " : "○ "}
             {openStatus.label} · {openStatus.detail}
           </p>
-          <p className="text-xs text-white/30 text-center">Entrega em até 40 min • Columbus, OH</p>
+          <p className="text-xs text-white/30 text-center">Delivery em até 40 min · Columbus, OH</p>
         </div>
       </aside>
 
@@ -845,23 +845,23 @@ export default function Home() {
           </ul>
           <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
             <p className="text-sm font-bold text-white">Entrega</p>
-            <p className="text-sm text-white/60 mt-1">Em até 40 min • Columbus, OH</p>
-            <a
-              href={MAPS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex min-h-[44px] items-center text-sm font-semibold text-[#FFD100]"
-            >
-              Ver no Google Maps →
-            </a>
-          </div>
-          <button
-            type="button"
-            onClick={openMenu}
-            className="mt-4 w-full min-h-[52px] rounded-2xl bg-[#FFD100] text-black font-bold text-base active:scale-[0.98] transition"
-          >
-            {openStatus.open ? "Pedir agora" : "Ver cardápio"}
-          </button>
+            <p className="text-sm text-white/60 mt-1">Chega quente em até 40 min · Columbus, OH</p>
+                        <a
+                          href={MAPS_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 inline-flex min-h-[44px] items-center text-sm font-semibold text-[#FFD100]"
+                        >
+                          Ver no Google o que a galera fala →
+                        </a>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={openMenu}
+                        className="mt-4 w-full min-h-[52px] rounded-2xl bg-[#FFD100] text-black font-bold text-base active:scale-[0.98] transition"
+                      >
+                        {openStatus.open ? "Pedir agora" : "Ver cardápio"}
+                      </button>
         </main>
       ) : tab === "home" ? (
         <main ref={mainRef} className="flex-1 overflow-y-auto md:pb-6 pb-14">
@@ -876,39 +876,41 @@ export default function Home() {
               />
 
               <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-1 tracking-tight">King Food</h1>
-              <p className="text-sm md:text-base text-white/50 mb-2">Açaí Premium • Columbus, OH</p>
+                            <p className="text-sm md:text-base text-white/50 mb-2">
+                              O açaí BR da saudade · Columbus, OH
+                            </p>
 
-              <p
-                className={`text-xs font-semibold mb-3 ${openStatus.open ? "text-emerald-400" : "text-white/50"}`}
-              >
-                {openStatus.open ? "● " : "○ "}
-                {openStatus.label}
-                {openStatus.detail ? ` · ${openStatus.detail}` : ""}
-              </p>
+                            <p
+                              className={`text-xs font-semibold mb-3 ${openStatus.open ? "text-emerald-400" : "text-white/50"}`}
+                            >
+                              {openStatus.open ? "● " : "○ "}
+                              {openStatus.label}
+                              {openStatus.detail ? ` · ${openStatus.detail}` : ""}
+                            </p>
 
-              <p className="text-sm md:text-base text-white/70 leading-relaxed mb-5 max-w-md">
-                Açaí brasileiro feito com ingredientes premium. Delivery em Columbus.
-              </p>
+                            <p className="text-sm md:text-base text-white/70 leading-relaxed mb-5 max-w-md">
+                              Feito pra quem sente falta do Brasil. Açaí de verdade, delivery rápido.
+                            </p>
 
-              {/* Primary CTA only */}
-              <button
-                type="button"
-                onClick={openMenu}
-                ref={ctaPrimaryRef}
-                className="w-full md:w-auto md:min-w-[240px] min-h-[52px] bg-[#FFD100] hover:bg-[#FFD100]/90 text-black font-bold py-3.5 rounded-2xl text-base shadow-lg shadow-[#FFD100]/20 active:scale-[0.98] transition will-change-transform"
-              >
-                {openStatus.open ? "Pedir agora →" : "Ver cardápio →"}
-              </button>
+                            {/* Primary CTA only */}
+                            <button
+                              type="button"
+                              onClick={openMenu}
+                              ref={ctaPrimaryRef}
+                              className="w-full md:w-auto md:min-w-[240px] min-h-[52px] bg-[#FFD100] hover:bg-[#FFD100]/90 text-black font-bold py-3.5 rounded-2xl text-base shadow-lg shadow-[#FFD100]/20 active:scale-[0.98] transition will-change-transform"
+                            >
+                              {openStatus.open ? "Pedir agora →" : "Ver cardápio →"}
+                            </button>
 
-              {/* Secondary — text link, not competing button */}
-              <a
-                href={GROUP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 min-h-[44px] inline-flex items-center text-sm font-semibold text-white/55 hover:text-white/85 underline-offset-4 hover:underline transition"
-              >
-                Entrar no grupo do WhatsApp
-              </a>
+                            {/* Secondary — text link, not competing button */}
+                            <a
+                              href={GROUP_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-3 min-h-[44px] inline-flex items-center text-sm font-semibold text-white/55 hover:text-white/85 underline-offset-4 hover:underline transition"
+                            >
+                              Entrar no grupo e pegar novidade
+                            </a>
 
               {canInstall && (
                 <button
@@ -934,24 +936,24 @@ export default function Home() {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-white">Google Business</p>
-                  <p className="text-sm text-[#FFD100]">Ver avaliações reais →</p>
-                  <p className="text-xs text-white/40">Maps · Columbus, OH</p>
-                </div>
-              </a>
+                                    <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
+                                    <p className="text-xs text-white/40">Maps · Columbus, OH</p>
+                                  </div>
+                                </a>
 
-              <div className="grid grid-cols-2 gap-3">
-                <a
-                  href={WA_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
-                >
-                  <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
-                  <div>
-                    <p className="text-xs font-bold text-white">WhatsApp</p>
-                    <p className="text-[10px] text-white/40">Falar agora</p>
-                  </div>
-                </a>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <a
+                                    href={WA_URL}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
+                                  >
+                                    <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
+                                    <div>
+                                      <p className="text-xs font-bold text-white">WhatsApp</p>
+                                      <p className="text-[10px] text-white/40">Chamar agora</p>
+                                    </div>
+                                  </a>
                 <a
                   href={INSTAGRAM_URL}
                   target="_blank"
@@ -987,50 +989,50 @@ export default function Home() {
                 </span>
                 <div>
                   <p className="text-sm font-bold text-white">Horários e entrega</p>
-                  <p className="text-xs text-white/40">
-                    {openStatus.label} · em até 40 min · Columbus, OH
-                  </p>
-                </div>
-              </button>
-            </div>
-          </div>
+                                    <p className="text-xs text-white/40">
+                                      {openStatus.label} · delivery em até 40 min
+                                    </p>
+                                  </div>
+                                </button>
+                              </div>
+                            </div>
 
-          {/* Mobile cards */}
-          <div className="md:hidden">
-            <div className="w-full mt-5 text-left px-5">
-              <h2 className="text-sm font-extrabold text-white mb-2.5">Avaliações</h2>
-              <a
-                href={MAPS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 active:scale-[0.98] transition min-h-[64px]"
-              >
-                <div className="shrink-0 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                  <GoogleGIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-white">Google Business</p>
-                  <p className="text-sm text-[#FFD100]">Ver avaliações reais →</p>
-                  <p className="text-xs text-white/40">Maps · Columbus, OH</p>
-                </div>
-              </a>
-            </div>
+                            {/* Mobile cards */}
+                            <div className="md:hidden">
+                              <div className="w-full mt-5 text-left px-5">
+                                <h2 className="text-sm font-extrabold text-white mb-2.5">Avaliações</h2>
+                                <a
+                                  href={MAPS_URL}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 active:scale-[0.98] transition min-h-[64px]"
+                                >
+                                  <div className="shrink-0 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                    <GoogleGIcon className="w-5 h-5" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold text-white">Google Business</p>
+                                    <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
+                                    <p className="text-xs text-white/40">Maps · Columbus, OH</p>
+                                  </div>
+                                </a>
+                              </div>
 
-            <div className="w-full mt-4 text-left px-5 pb-4">
-              <h2 className="text-sm font-extrabold text-white mb-2.5">Contato</h2>
-              <div className="grid grid-cols-2 gap-3">
-                <a
-                  href={WA_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
-                >
-                  <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
-                  <div>
-                    <p className="text-xs font-bold text-white">WhatsApp</p>
-                    <p className="text-[10px] text-white/40">Falar agora</p>
-                  </div>
-                </a>
+                              <div className="w-full mt-4 text-left px-5 pb-4">
+                                <h2 className="text-sm font-extrabold text-white mb-2.5">Contato</h2>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <a
+                                    href={WA_URL}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
+                                  >
+                                    <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
+                                    <div>
+                                      <p className="text-xs font-bold text-white">WhatsApp</p>
+                                      <p className="text-[10px] text-white/40">Chamar agora</p>
+                                    </div>
+                                  </a>
                 <a
                   href={INSTAGRAM_URL}
                   target="_blank"
@@ -1076,12 +1078,12 @@ export default function Home() {
               <img src={LOGO} alt="" className="w-7 h-7 object-contain" decoding="async" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white">Instale o King Food</p>
-              <p className="text-xs text-white/50 leading-snug">
-                {installPlatform === "ios"
-                  ? "Compartilhar → Tela de Início"
-                  : "Acesso rápido na tela inicial"}
-              </p>
+              <p className="text-sm font-bold text-white">Peça mais rápido</p>
+                            <p className="text-xs text-white/50 leading-snug">
+                              {installPlatform === "ios"
+                                ? "Compartilhar → Tela de Início"
+                                : "App na tela inicial do celular"}
+                            </p>
             </div>
             <button
               type="button"
