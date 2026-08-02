@@ -33,12 +33,6 @@ const HOURS = [
   { day: 6, label: "Sábado", hours: "9:00 PM – 11:00 PM" },
 ];
 
-const HOME_REVIEWS = [
-  { t: "Melhor açaí de Columbus.", a: "Marina S." },
-  { t: "Sabor igual ao do Brasil.", a: "Carlos R." },
-  { t: "Entrega rápida e carinhosa.", a: "Juliana P." },
-];
-
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
@@ -81,11 +75,10 @@ function InstallModal({
           <img src={LOGO} alt="" className="h-12 w-12 object-contain" />
         </div>
         <h2 id="install-title" className="text-lg font-extrabold text-gray-900">
-          Instale nosso app 📲
+          Instale nosso app
         </h2>
         <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-          Peça mais rápido, acompanhe seus pedidos e acumule pontos direto na tela inicial do seu
-          celular.
+          Peça mais rápido direto da tela inicial do seu celular.
         </p>
         <button
           type="button"
@@ -116,6 +109,7 @@ export default function Home() {
   const [showInstallModal, setShowInstallModal] = useState(false);
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
   const loadingDone = useRef(false);
+
   const today = new Date().getDay();
 
   const tryShowModal = useCallback(() => {
@@ -450,17 +444,15 @@ export default function Home() {
       ) : (
         <main className="flex-1 overflow-y-auto bg-white px-4 py-6">
           <div className="max-w-sm mx-auto flex flex-col items-center text-center">
-            <img src={LOGO} alt="King Food" className="w-24 h-24 object-contain mb-3" />
-            <p className="text-2xl mb-1" aria-hidden>
-              😍 🍇
-            </p>
-            <h1 className="text-xl font-extrabold text-gray-900 mb-2">Bem-vindo(a) ao King Food</h1>
+            <img src={LOGO} alt="King Food" className="w-24 h-24 object-contain mb-3 rounded-2xl" />
+            <h1 className="text-2xl font-extrabold text-gray-900 mb-1 tracking-tight">King Food</h1>
+            <p className="text-sm text-gray-500 mb-3">Açaí Premium • Columbus, OH</p>
             <p className="text-sm text-gray-700 leading-relaxed mb-2">
-              O sabor BR que dá um tapa na saudade. Açaí tradicional brasileiro, feito com
-              ingredientes premium, entregue com carinho em Columbus.
+              O sabor BR que dá um tapa na saudade. Açaí brasileiro feito com ingredientes premium.
+              Delivery e retirada em Columbus.
             </p>
             <p className="text-xs text-gray-500 leading-relaxed mb-5">
-              Welcome to King Food! Authentic Brazilian açaí, delivered with love in Columbus.
+              Authentic Brazilian açaí — premium ingredients, delivered with care in Columbus, OH.
             </p>
             <div className="flex items-center justify-center gap-6 mb-6 text-xs text-gray-600">
               <span className="flex flex-col items-center gap-1">
@@ -475,6 +467,12 @@ export default function Home() {
                 </span>
                 Delivery
               </span>
+              <span className="flex flex-col items-center gap-1">
+                <span className="text-2xl" aria-hidden>
+                  ⏱️
+                </span>
+                Até 40 min
+              </span>
             </div>
             <div className="w-full flex flex-col gap-3 items-center mb-6">
               <button
@@ -483,15 +481,22 @@ export default function Home() {
                 className="w-full !bg-purple-700 hover:!bg-purple-800 !text-white font-bold py-4 rounded-2xl text-base shadow-lg shadow-purple-700/25 active:scale-[0.99] transition"
                 style={{ color: "#ffffff", backgroundColor: "#7e22ce" }}
               >
-                Ver cardápio →
+                Pedir agora →
+              </button>
+              <button
+                type="button"
+                onClick={openMenu}
+                className="w-full border-2 border-black text-black font-bold py-3.5 rounded-2xl text-base text-center bg-transparent hover:bg-black/5 active:scale-[0.99] transition"
+              >
+                Ver cardápio
               </button>
               <a
                 href={GROUP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full border-2 border-black text-black font-bold py-3.5 rounded-2xl text-base text-center bg-transparent hover:bg-black/5 active:scale-[0.99] transition"
+                className="w-full border border-gray-200 text-gray-800 font-semibold py-3 rounded-2xl text-sm text-center bg-gray-50 hover:bg-gray-100 active:scale-[0.99] transition"
               >
-                Entre em nosso grupo
+                Entrar no grupo
               </a>
               {canInstall && (
                 <button
@@ -504,7 +509,7 @@ export default function Home() {
               )}
             </div>
             <div className="w-full text-left mb-3">
-              <h2 className="text-sm font-extrabold text-black mb-2">O que dizem nossos clientes</h2>
+              <h2 className="text-sm font-extrabold text-black mb-2">Avaliações</h2>
               <a
                 href={MAPS_URL}
                 target="_blank"
@@ -516,23 +521,51 @@ export default function Home() {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-gray-900">Google</p>
-                  <p className="text-sm text-[#E37400]">★★★★★ 5.0</p>
-                  <p className="text-xs text-gray-500">Ver todas as avaliações no Google Maps</p>
+                  <p className="text-xs text-gray-500">Ver avaliações no Google Maps</p>
                 </div>
               </a>
             </div>
-            <div className="w-full flex gap-3 overflow-x-auto pb-2 scrollbar-hide text-left">
-              {HOME_REVIEWS.map((r) => (
-                <div
-                  key={r.a}
-                  className="min-w-[200px] rounded-2xl border border-gray-100 bg-gray-50 p-3"
-                >
-                  <p className="text-[#FFD100] text-xs">★★★★★</p>
-                  <p className="text-xs text-gray-800 mt-1">“{r.t}”</p>
-                  <p className="text-[10px] text-gray-400 mt-2">{r.a}</p>
+            <div className="w-full grid grid-cols-2 gap-3 text-left">
+              <a
+                href={WA_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 rounded-2xl border border-gray-100 bg-gray-50 p-3.5"
+              >
+                <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
+                <div>
+                  <p className="text-xs font-bold text-gray-900">WhatsApp</p>
+                  <p className="text-[10px] text-gray-500">Falar agora</p>
                 </div>
-              ))}
+              </a>
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 rounded-2xl border border-gray-100 bg-gray-50 p-3.5"
+              >
+                <span className="text-lg" aria-hidden>
+                  📸
+                </span>
+                <div>
+                  <p className="text-xs font-bold text-gray-900">Instagram</p>
+                  <p className="text-[10px] text-gray-500">@king.food_delivery</p>
+                </div>
+              </a>
             </div>
+            <button
+              type="button"
+              onClick={() => setTab("hours")}
+              className="w-full mt-3 flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-left"
+            >
+              <span className="text-2xl" aria-hidden>
+                🕐
+              </span>
+              <div>
+                <p className="text-sm font-bold text-gray-900">Horários e entrega</p>
+                <p className="text-xs text-gray-500">Em até 40 min • Columbus, OH</p>
+              </div>
+            </button>
           </div>
         </main>
       )}
