@@ -945,15 +945,15 @@ export default function Home() {
 
       {/* Área de conteúdo: uma shell flex-1; camadas absolutas por aba (sem gap) */}
             <div className="flex-1 relative min-h-0 w-full max-w-5xl mx-auto">
-              {/* Cardápio pré-carregado em background */}
-              <div
-                className={`absolute inset-0 bg-white md:pb-0 pb-14 transition-opacity duration-300 ease-out ${
-                  tab === "menu"
-                    ? "opacity-100 pointer-events-auto z-[2]"
-                    : "opacity-0 pointer-events-none z-0"
-                }`}
-                aria-hidden={tab !== "menu"}
-              >
+              {/* Cardápio — no mobile deixa espaço da bottom nav (~56px + safe area) */}
+                            <div
+                              className={`absolute inset-x-0 top-0 z-0 bg-white transition-opacity duration-300 ease-out bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-0 ${
+                                tab === "menu"
+                                  ? "opacity-100 pointer-events-auto z-[2]"
+                                  : "opacity-0 pointer-events-none z-0"
+                              }`}
+                              aria-hidden={tab !== "menu"}
+                            >
                 {menuMounted && (
                   <>
                     {tab === "menu" && !iframeReady && !iframeError && (
