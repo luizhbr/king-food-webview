@@ -475,53 +475,57 @@ export default function Home() {
     };
   }, [tryShowInstallSoft]);
 
-  // Iframe load timeout → show fallback
-  useEffect(() => {
-    if (tab !== "menu" || !menuMounted || iframeReady) return;
-    setIframeError(false);
-    const t = window.setTimeout(() => {
-      if (!iframeReady) setIframeError(true);
-    }, 12_000);
-    return () => window.clearTimeout(t);
-  }, [tab, menuMounted, iframeReady]);
+  // Prefetch cardápio em background assim que o splash acaba
+    useEffect(() => {
+      if (loading) return;
+      const warm = window.setTimeout(() => {
+        setMenuMounted(true);
+      }, 400);
+      return () => window.clearTimeout(warm);
+    }, [loading]);
 
-  const handleInstall = async () => {
-    const promptEvent =
-      deferredPrompt.current || (window.__kfDeferredPrompt as BeforeInstallPromptEvent | null);
-    if (!promptEvent) {
-      setShowInstallModal(false);
-      return;
-    }
-    setShowInstallModal(false);
-    try {
-      await promptEvent.prompt();
-      const { outcome } = await promptEvent.userChoice;
-      if (outcome === "accepted") {
-        deferredPrompt.current = null;
-        window.__kfDeferredPrompt = null;
-        setCanInstall(false);
-        setShowInstallBanner(false);
+    // Timeout de falha só conta com o usuário na aba cardápio
+    useEffect(() => {
+      if (tab !== "menu" || !menuMounted || iframeReady) return;
+      const t = window.setTimeout(() => {
+        setIframeError((err) => (iframeReady ? err : true));
+      }, 14_000);
+      return () => window.clearTimeout(t);
+    }, [tab, menuMounted, iframeReady]);
+
+    const handleInstall = async () => {
+      const promptEvent =
+        deferredPrompt.current || (window.__kfDeferredPrompt as BeforeInstallPromptEvent | null);
+      if (!promptEvent) {
+        setShowInstallModal(false);
+        return;
       }
-    } catch {
-      /* cancelled */
-    }
-  };
+      setShowInstallModal(false);
+      try {
+        await promptEvent.prompt();
+        const { outcome } = await promptEvent.userChoice;
+        if (outcome === "accepted") {
+          deferredPrompt.current = null;
+          window.__kfDeferredPrompt = null;
+          setCanInstall(false);
+          setShowInstallBanner(false);
+        }
+      } catch {
+        /* cancelled */
+      }
+    };
 
-  const dismissInstallModal = () => {
-    sessionStorage.setItem(INSTALL_DISMISS_KEY, "1");
-    setShowInstallModal(false);
-    setShowInstallBanner(false);
-  };
+    const dismissInstallModal = () => {
+      sessionStorage.setItem(INSTALL_DISMISS_KEY, "1");
+      setShowInstallModal(false);
+      setShowInstallBanner(false);
+    };
 
-  const openMenu = () => {
-    setDrawerOpen(false);
-    if (!menuMounted) {
-      setIframeReady(false);
-      setIframeError(false);
+    const openMenu = () => {
+      setDrawerOpen(false);
       setMenuMounted(true);
-    }
-    setTab("menu");
-  };
+      setTab("menu");
+    };
 
   const goHome = () => setTab("home");
   const goHours = () => {
@@ -746,60 +750,64 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* Menu tab — keep iframe mounted */}
-      <div
-        className={`flex-1 relative min-h-0 bg-white max-w-5xl mx-auto w-full md:pb-0 pb-14 ${tab === "menu" ? "" : "hidden"}`}
-        aria-hidden={tab !== "menu"}
-      >
-        {menuMounted && (
-          <>
-            {(!iframeReady || iframeError) && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black px-6">
-                {!iframeError ? (
-                  <>
-                    <div className="w-10 h-10 border-4 border-[#FFD100] border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm text-white/60">Carregando cardápio...</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-white/80 text-center">
-                      O cardápio demorou para abrir neste aparelho.
-                    </p>
-                    <a
-                      href={MENU_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="min-h-[48px] inline-flex items-center justify-center rounded-2xl bg-[#FFD100] px-6 text-sm font-bold text-black"
-                    >
-                      Abrir cardápio
-                    </a>
-                  </>
-                )}
-                <a
-                  href={MENU_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-semibold text-[#FFD100] underline min-h-[44px] inline-flex items-center"
-                >
-                  Abrir em nova aba
-                </a>
-              </div>
-            )}
-            <iframe
-              src={MENU_URL}
-              className="absolute inset-0 w-full h-full border-0"
-              title="Cardápio King Food"
-              allow="payment"
-              loading="eager"
-              referrerPolicy="no-referrer-when-downgrade"
-              onLoad={() => {
-                setIframeReady(true);
-                setIframeError(false);
-              }}
-            />
-          </>
-        )}
-      </div>
+      {/* Menu tab — pré-carrega em background; transição suave */}
+            <div
+              className={`flex-1 relative min-h-0 bg-white max-w-5xl mx-auto w-full md:pb-0 pb-14 transition-opacity duration-300 ease-out ${
+                tab === "menu"
+                  ? "opacity-100 pointer-events-auto z-[1]"
+                  : "opacity-0 pointer-events-none absolute inset-x-0 top-[52px] bottom-14 md:bottom-0 z-0 overflow-hidden"
+              }`}
+              aria-hidden={tab !== "menu"}
+            >
+              {menuMounted && (
+                <>
+                  {/* Overlay suave só se ainda não carregou E usuário está no cardápio */}
+                  {tab === "menu" && !iframeReady && !iframeError && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-black/40 via-black/25 to-black/40 backdrop-blur-[2px] px-6 transition-opacity duration-300">
+                      <div className="w-9 h-9 border-[3px] border-[#FFD100]/80 border-t-transparent rounded-full animate-spin" />
+                      <p className="text-sm text-white/80 font-medium">Abrindo cardápio…</p>
+                    </div>
+                  )}
+                  {tab === "menu" && iframeError && !iframeReady && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black/80 px-6">
+                      <p className="text-sm text-white/80 text-center">
+                        O cardápio demorou para abrir neste aparelho.
+                      </p>
+                      <a
+                        href={MENU_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="min-h-[48px] inline-flex items-center justify-center rounded-2xl bg-[#FFD100] px-6 text-sm font-bold text-black"
+                      >
+                        Abrir cardápio
+                      </a>
+                      <a
+                        href={MENU_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-[#FFD100] underline min-h-[44px] inline-flex items-center"
+                      >
+                        Abrir em nova aba
+                      </a>
+                    </div>
+                  )}
+                  <iframe
+                    src={MENU_URL}
+                    className={`absolute inset-0 w-full h-full border-0 transition-opacity duration-500 ease-out ${
+                      iframeReady ? "opacity-100" : "opacity-0"
+                    }`}
+                    title="Cardápio King Food"
+                    allow="payment"
+                    loading="eager"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    onLoad={() => {
+                      setIframeReady(true);
+                      setIframeError(false);
+                    }}
+                  />
+                </>
+              )}
+            </div>
 
       {tab === "hours" ? (
         <main className="flex-1 overflow-y-auto px-4 py-5 max-w-2xl mx-auto w-full md:pb-6 pb-14">
