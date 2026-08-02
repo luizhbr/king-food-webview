@@ -6,13 +6,13 @@ import type { NextConfig } from "next";
  */
 const cspReportOnly = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://*.vercel-scripts.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://*.vercel-scripts.com https://cdn.onesignal.com https://*.onesignal.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com https://*.vercel-insights.com https://*.ola.click",
+  "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com https://*.vercel-insights.com https://*.ola.click https://*.onesignal.com https://onesignal.com wss://*.onesignal.com",
   "frame-src https://kingfood.fe-v2.ola.click https://*.ola.click",
-  "worker-src 'self' blob:",
+  "worker-src 'self' blob: https://cdn.onesignal.com",
   "manifest-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
@@ -86,15 +86,29 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/sw.js",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=0, must-revalidate",
-          },
-          { key: "Service-Worker-Allowed", value: "/" },
-        ],
-      },
+              source: "/sw.js",
+              headers: [
+                {
+                  key: "Cache-Control",
+                  value: "public, max-age=0, must-revalidate",
+                },
+                { key: "Service-Worker-Allowed", value: "/" },
+              ],
+            },
+            {
+              source: "/push/onesignal/:path*",
+              headers: [
+                {
+                  key: "Cache-Control",
+                  value: "public, max-age=0, must-revalidate",
+                },
+                { key: "Service-Worker-Allowed", value: "/push/onesignal/" },
+                {
+                  key: "Content-Type",
+                  value: "application/javascript; charset=utf-8",
+                },
+              ],
+            },
       {
         source: "/manifest.json",
         headers: [
