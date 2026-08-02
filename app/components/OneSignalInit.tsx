@@ -195,11 +195,6 @@ export default function OneSignalInit() {
           <p className="text-xs text-white/50 leading-snug">
             Ative o aviso de promo e açaí fresco.
           </p>
-          {(status === "error" || errMsg) && (
-            <p className="text-[10px] text-red-400 mt-1 break-words">
-              {errMsg || "Falha SDK. Site URL no OneSignal = este domínio."}
-            </p>
-          )}
         </div>
         <button
           type="button"
