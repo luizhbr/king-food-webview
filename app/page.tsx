@@ -216,9 +216,9 @@ function InstallModal({
         aria-labelledby="install-title"
         className="relative z-10 w-full max-w-sm rounded-3xl border border-white/10 bg-black/90 backdrop-blur-xl p-6 shadow-2xl text-center"
       >
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFD100]">
-          <img src={LOGO} alt="" className="h-11 w-11 object-contain" decoding="async" />
-        </div>
+        <div className="mx-auto mb-4 h-16 w-16 overflow-hidden rounded-2xl bg-[#FFD100]">
+                  <img src={LOGO} alt="" className="h-full w-full object-cover" decoding="async" />
+                </div>
         <h2 id="install-title" className="text-lg font-extrabold text-white">
           Instale o King Food
         </h2>
@@ -613,21 +613,21 @@ export default function Home() {
     return (
       <>
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#FFD100]">
-          <div
-            className={`flex flex-col items-center transition-all duration-700 ease-out ${showLogo ? "opacity-100 scale-100" : "opacity-0 scale-90"}`}
-          >
-            <img
-              src={LOGO}
-              alt="King Food"
-              className="w-44 h-44 object-contain drop-shadow-md"
-              fetchPriority="high"
-              decoding="async"
-            />
-          </div>
-          <div className={`mt-8 transition-opacity duration-500 delay-300 ${showLogo ? "opacity-100" : "opacity-0"}`}>
-            <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
-          </div>
-        </div>
+                  <div
+                    className={`flex flex-col items-center transition-all duration-700 ease-out ${showLogo ? "opacity-100 scale-100" : "opacity-0 scale-90"}`}
+                  >
+                    <img
+                      src={LOGO}
+                      alt="King Food"
+                      className="w-44 h-44 object-contain"
+                      fetchPriority="high"
+                      decoding="async"
+                    />
+                  </div>
+                  <div className={`mt-8 transition-opacity duration-500 delay-300 ${showLogo ? "opacity-100" : "opacity-0"}`}>
+                    <div className="w-10 h-10 border-4 border-black/80 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                </div>
       </>
     );
   }
@@ -664,7 +664,7 @@ export default function Home() {
               <img
                 src={LOGO}
                 alt="King Food"
-                className="w-8 h-8 object-contain rounded-lg shrink-0"
+                className="w-8 h-8 object-cover rounded-lg shrink-0 bg-[#FFD100]"
                 decoding="async"
               />
               <div className="leading-tight text-left min-w-0">
@@ -759,7 +759,7 @@ export default function Home() {
       >
         <div className="px-4 py-5 flex items-center justify-between border-b border-white/10">
           <div className="flex items-center gap-3">
-            <img src={LOGO} alt="King Food" className="w-10 h-10 object-contain rounded-lg" decoding="async" />
+            <img src={LOGO} alt="King Food" className="w-10 h-10 object-cover rounded-lg bg-[#FFD100]" decoding="async" />
             <div>
               <p className="font-bold text-white">King Food</p>
               <p className="text-xs text-white/40">Menu</p>
@@ -952,7 +952,7 @@ export default function Home() {
                       <img
                         src={LOGO}
                         alt="King Food"
-                        className="w-20 h-20 md:w-32 md:h-32 object-contain mb-3 rounded-2xl"
+                        className="w-20 h-20 md:w-32 md:h-32 object-cover mb-3 rounded-2xl bg-[#FFD100]"
                         decoding="async"
                         fetchPriority="high"
                       />
@@ -1162,9 +1162,9 @@ export default function Home() {
             {showInstallBanner && !showInstallModal && tab === "home" && (
               <div className="fixed bottom-14 md:bottom-4 left-0 right-0 z-[90] px-4 pointer-events-none">
                 <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl p-3 shadow-2xl flex items-center gap-3">
-                  <div className="shrink-0 w-10 h-10 rounded-xl bg-[#FFD100] flex items-center justify-center">
-                    <img src={LOGO} alt="" className="w-7 h-7 object-contain" decoding="async" />
-                  </div>
+                  <div className="shrink-0 w-10 h-10 rounded-xl bg-[#FFD100] overflow-hidden">
+                                      <img src={LOGO} alt="" className="w-full h-full object-cover" decoding="async" />
+                                    </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white">Peça mais rápido</p>
                     <p className="text-xs text-white/50 leading-snug">
