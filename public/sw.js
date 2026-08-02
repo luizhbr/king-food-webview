@@ -1,5 +1,5 @@
-/* King Food SW v4 — HTML/JS network-first, static assets cache-first */
-const CACHE = "king-food-v4";
+/* King Food SW v5 — HTML/JS network-first; nunca cacheia /api */
+const CACHE = "king-food-v5";
 const PRECACHE = [
   "/logo-kingfood.png.png",
   "/bg-acai.jpg",
@@ -41,6 +41,12 @@ self.addEventListener("fetch", (event) => {
 
   // Only same-origin
   if (url.origin !== self.location.origin) return;
+
+  // Nunca interceptar / cachear API
+  if (url.pathname.startsWith("/api")) return;
+
+  // Schemes estranhos
+  if (url.protocol !== "https:" && url.protocol !== "http:") return;
 
   const isNav = req.mode === "navigate";
   const accept = req.headers.get("accept") || "";
