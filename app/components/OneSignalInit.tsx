@@ -72,7 +72,9 @@ export default function OneSignalInit() {
           setStatus("subscribed");
           return;
         }
-        if (Notification.permission === "denied") {
+
+        const perm = String(Notification.permission);
+        if (perm === "denied") {
           setStatus("blocked");
           showLater(1200);
           return;
