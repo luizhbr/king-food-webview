@@ -1079,20 +1079,22 @@ export default function Home() {
                         fetchPriority="high"
                       />
 
-                      <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-1 tracking-tight">King Food</h1>
-                      <p className="text-sm md:text-base text-white/50 mb-2">
+                      <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-1 tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+                        King Food
+                      </h1>
+                      <p className="text-sm md:text-base font-semibold text-white/90 mb-2 drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]">
                         O açaí BR da saudade · Columbus, OH
                       </p>
 
                       <p
-                        className={`text-xs font-semibold mb-3 ${openStatus.open ? "text-emerald-400" : "text-white/50"}`}
+                        className={`text-xs font-bold mb-3 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] ${openStatus.open ? "text-emerald-300" : "text-white/85"}`}
                       >
                         {openStatus.open ? "● " : "○ "}
                         {openStatus.label}
                         {openStatus.detail ? ` · ${openStatus.detail}` : ""}
                       </p>
 
-                      <p className="text-sm md:text-base text-white/70 leading-relaxed mb-5 max-w-md">
+                      <p className="text-sm md:text-base font-medium text-white/95 leading-relaxed mb-5 max-w-md drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)]">
                         Feito pra quem sente falta do Brasil. Açaí de verdade, delivery rápido.
                       </p>
 
@@ -1109,7 +1111,7 @@ export default function Home() {
                         href={GROUP_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-3 min-h-[44px] inline-flex items-center text-sm font-semibold text-white/55 hover:text-white/85 underline-offset-4 hover:underline transition"
+                        className="mt-3 min-h-[44px] inline-flex items-center text-sm font-bold text-white/90 hover:text-white underline-offset-4 hover:underline transition drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]"
                       >
                         Entrar no grupo e pegar novidade
                       </a>
@@ -1141,7 +1143,7 @@ export default function Home() {
                         <div>
                           <p className="text-sm font-bold text-white">Google Business</p>
                           <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
-                          <p className="text-xs text-white/40">Maps · Columbus, OH</p>
+                          <p className="text-xs font-medium text-white/75">Maps · Columbus, OH</p>
                         </div>
                       </a>
 
@@ -1155,7 +1157,7 @@ export default function Home() {
                           <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
                           <div>
                             <p className="text-xs font-bold text-white">WhatsApp</p>
-                            <p className="text-[10px] text-white/40">Chamar agora</p>
+                            <p className="text-[10px] font-semibold text-white/75">Chamar agora</p>
                           </div>
                         </a>
                         <a
@@ -1178,7 +1180,7 @@ export default function Home() {
                           </svg>
                           <div>
                             <p className="text-xs font-bold text-white">Instagram</p>
-                            <p className="text-[10px] text-white/40">@king.food_delivery</p>
+                            <p className="text-[10px] font-semibold text-white/75">@king.food_delivery</p>
                           </div>
                         </a>
                       </div>
@@ -1203,7 +1205,7 @@ export default function Home() {
 
                   <div className="md:hidden">
                     <div className="w-full mt-5 text-left px-5">
-                      <h2 className="text-sm font-extrabold text-white mb-2.5">Avaliações</h2>
+                      <h2 className="text-sm font-extrabold text-white mb-2.5 drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]">Avaliações</h2>
                       <a
                         href={MAPS_URL}
                         target="_blank"
@@ -1216,13 +1218,13 @@ export default function Home() {
                         <div>
                           <p className="text-sm font-bold text-white">Google Business</p>
                           <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
-                          <p className="text-xs text-white/40">Maps · Columbus, OH</p>
+                          <p className="text-xs font-medium text-white/75">Maps · Columbus, OH</p>
                         </div>
                       </a>
                     </div>
 
                     <div className="w-full mt-4 text-left px-5 pb-4">
-                      <h2 className="text-sm font-extrabold text-white mb-2.5">Contato</h2>
+                      <h2 className="text-sm font-extrabold text-white mb-2.5 drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]">Contato</h2>
                       <div className="grid grid-cols-2 gap-3">
                         <a
                           href={WA_URL}
@@ -1233,7 +1235,7 @@ export default function Home() {
                           <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
                           <div>
                             <p className="text-xs font-bold text-white">WhatsApp</p>
-                            <p className="text-[10px] text-white/40">Chamar agora</p>
+                            <p className="text-[10px] font-semibold text-white/75">Chamar agora</p>
                           </div>
                         </a>
                         <a
@@ -1262,7 +1264,7 @@ export default function Home() {
                           </svg>
                           <div>
                             <p className="text-xs font-bold text-white">Instagram</p>
-                            <p className="text-[10px] text-white/40">@king.food_delivery</p>
+                            <p className="text-[10px] font-semibold text-white/75">@king.food_delivery</p>
                           </div>
                         </a>
                       </div>
