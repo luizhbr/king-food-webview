@@ -750,331 +750,329 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* Menu tab — pré-carrega em background; transição suave */}
-            <div
-              className={`flex-1 relative min-h-0 bg-white max-w-5xl mx-auto w-full md:pb-0 pb-14 transition-opacity duration-300 ease-out ${
-                tab === "menu"
-                  ? "opacity-100 pointer-events-auto z-[1]"
-                  : "opacity-0 pointer-events-none absolute inset-x-0 top-[52px] bottom-14 md:bottom-0 z-0 overflow-hidden"
-              }`}
-              aria-hidden={tab !== "menu"}
-            >
-              {menuMounted && (
-                <>
-                  {/* Overlay suave só se ainda não carregou E usuário está no cardápio */}
-                  {tab === "menu" && !iframeReady && !iframeError && (
-                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-black/40 via-black/25 to-black/40 backdrop-blur-[2px] px-6 transition-opacity duration-300">
-                      <div className="w-9 h-9 border-[3px] border-[#FFD100]/80 border-t-transparent rounded-full animate-spin" />
-                      <p className="text-sm text-white/80 font-medium">Abrindo cardápio…</p>
-                    </div>
-                  )}
-                  {tab === "menu" && iframeError && !iframeReady && (
-                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black/80 px-6">
-                      <p className="text-sm text-white/80 text-center">
-                        O cardápio demorou para abrir neste aparelho.
-                      </p>
-                      <a
-                        href={MENU_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="min-h-[48px] inline-flex items-center justify-center rounded-2xl bg-[#FFD100] px-6 text-sm font-bold text-black"
-                      >
-                        Abrir cardápio
-                      </a>
-                      <a
-                        href={MENU_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-semibold text-[#FFD100] underline min-h-[44px] inline-flex items-center"
-                      >
-                        Abrir em nova aba
-                      </a>
-                    </div>
-                  )}
-                  <iframe
-                    src={MENU_URL}
-                    className={`absolute inset-0 w-full h-full border-0 transition-opacity duration-500 ease-out ${
-                      iframeReady ? "opacity-100" : "opacity-0"
-                    }`}
-                    title="Cardápio King Food"
-                    allow="payment"
-                    loading="eager"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    onLoad={() => {
-                      setIframeReady(true);
-                      setIframeError(false);
-                    }}
-                  />
-                </>
-              )}
-            </div>
-
-      {tab === "hours" ? (
-        <main className="flex-1 overflow-y-auto px-4 py-5 max-w-2xl mx-auto w-full md:pb-6 pb-14">
-          <div className="flex items-center justify-between gap-3 mb-5">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl" aria-hidden>
-                🕐
-              </span>
-              <h2 className="text-lg font-extrabold text-white">Horários e entrega</h2>
-            </div>
-            <span
-              className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold border ${
-                openStatus.open
-                  ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-300"
-                  : "bg-white/10 border-white/15 text-white/70"
-              }`}
-            >
-              {openStatus.label}
-            </span>
-          </div>
-          <p className="text-sm text-white/50 mb-4">{openStatus.detail} · horário de Columbus, OH</p>
-          <ul className="rounded-2xl border border-white/10 overflow-hidden divide-y divide-white/5">
-            {HOURS.map((row) => {
-              const isToday = row.day === today;
-              const closed = row.hours === "Fechado";
-              return (
-                <li
-                  key={row.day}
-                  className={`flex items-center justify-between gap-3 px-4 py-3.5 min-h-[48px] ${isToday ? "bg-[#FFD100]/10" : "bg-transparent"}`}
-                >
-                  <span className={`text-sm ${isToday ? "font-bold text-[#FFD100]" : "font-medium text-white/80"}`}>
-                    {row.label}
-                    {isToday ? " · hoje" : ""}
-                  </span>
-                  <span
-                    className={`text-sm tabular-nums ${isToday ? "font-bold text-[#FFD100]" : closed ? "text-white/30" : "text-white/60"}`}
-                  >
-                    {row.hours}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-sm font-bold text-white">Entrega</p>
-            <p className="text-sm text-white/60 mt-1">Chega quente em até 40 min · Columbus, OH</p>
+      {/* Área de conteúdo: uma shell flex-1; camadas absolutas por aba (sem gap) */}
+            <div className="flex-1 relative min-h-0 w-full max-w-5xl mx-auto">
+              {/* Cardápio pré-carregado em background */}
+              <div
+                className={`absolute inset-0 bg-white md:pb-0 pb-14 transition-opacity duration-300 ease-out ${
+                  tab === "menu"
+                    ? "opacity-100 pointer-events-auto z-[2]"
+                    : "opacity-0 pointer-events-none z-0"
+                }`}
+                aria-hidden={tab !== "menu"}
+              >
+                {menuMounted && (
+                  <>
+                    {tab === "menu" && !iframeReady && !iframeError && (
+                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-black/40 via-black/25 to-black/40 backdrop-blur-[2px] px-6">
+                        <div className="w-9 h-9 border-[3px] border-[#FFD100]/80 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-sm text-white/80 font-medium">Abrindo cardápio…</p>
+                      </div>
+                    )}
+                    {tab === "menu" && iframeError && !iframeReady && (
+                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black/80 px-6">
+                        <p className="text-sm text-white/80 text-center">
+                          O cardápio demorou para abrir neste aparelho.
+                        </p>
                         <a
-                          href={MAPS_URL}
+                          href={MENU_URL}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-3 inline-flex min-h-[44px] items-center text-sm font-semibold text-[#FFD100]"
+                          className="min-h-[48px] inline-flex items-center justify-center rounded-2xl bg-[#FFD100] px-6 text-sm font-bold text-black"
                         >
-                          Ver no Google o que a galera fala →
+                          Abrir cardápio
+                        </a>
+                        <a
+                          href={MENU_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-semibold text-[#FFD100] underline min-h-[44px] inline-flex items-center"
+                        >
+                          Abrir em nova aba
                         </a>
                       </div>
+                    )}
+                    <iframe
+                      src={MENU_URL}
+                      className={`absolute inset-0 w-full h-full border-0 transition-opacity duration-500 ease-out ${
+                        iframeReady ? "opacity-100" : "opacity-0"
+                      }`}
+                      title="Cardápio King Food"
+                      allow="payment"
+                      loading="eager"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      onLoad={() => {
+                        setIframeReady(true);
+                        setIframeError(false);
+                      }}
+                    />
+                  </>
+                )}
+              </div>
+
+              {tab === "hours" ? (
+                <main className="absolute inset-0 z-[1] overflow-y-auto px-4 py-5 max-w-2xl mx-auto w-full md:pb-6 pb-14">
+                  <div className="flex items-center justify-between gap-3 mb-5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl" aria-hidden>
+                        🕐
+                      </span>
+                      <h2 className="text-lg font-extrabold text-white">Horários e entrega</h2>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold border ${
+                        openStatus.open
+                          ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-300"
+                          : "bg-white/10 border-white/15 text-white/70"
+                      }`}
+                    >
+                      {openStatus.label}
+                    </span>
+                  </div>
+                  <p className="text-sm text-white/50 mb-4">{openStatus.detail} · horário de Columbus, OH</p>
+                  <ul className="rounded-2xl border border-white/10 overflow-hidden divide-y divide-white/5">
+                    {HOURS.map((row) => {
+                      const isToday = row.day === today;
+                      const closed = row.hours === "Fechado";
+                      return (
+                        <li
+                          key={row.day}
+                          className={`flex items-center justify-between gap-3 px-4 py-3.5 min-h-[48px] ${isToday ? "bg-[#FFD100]/10" : "bg-transparent"}`}
+                        >
+                          <span className={`text-sm ${isToday ? "font-bold text-[#FFD100]" : "font-medium text-white/80"}`}>
+                            {row.label}
+                            {isToday ? " · hoje" : ""}
+                          </span>
+                          <span
+                            className={`text-sm tabular-nums ${isToday ? "font-bold text-[#FFD100]" : closed ? "text-white/30" : "text-white/60"}`}
+                          >
+                            {row.hours}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-sm font-bold text-white">Entrega</p>
+                    <p className="text-sm text-white/60 mt-1">Chega quente em até 40 min · Columbus, OH</p>
+                    <a
+                      href={MAPS_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex min-h-[44px] items-center text-sm font-semibold text-[#FFD100]"
+                    >
+                      Ver no Google o que a galera fala →
+                    </a>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={openMenu}
+                    className="mt-4 w-full min-h-[52px] rounded-2xl bg-[#FFD100] text-black font-bold text-base active:scale-[0.98] transition"
+                  >
+                    {openStatus.open ? "Pedir agora" : "Ver cardápio"}
+                  </button>
+                </main>
+              ) : tab === "home" ? (
+                <main ref={mainRef} className="absolute inset-0 z-[1] overflow-y-auto md:pb-6 pb-14">
+                  <div className="max-w-sm md:max-w-4xl mx-auto flex flex-col md:flex-row md:items-center md:gap-12 text-center md:text-left px-5 pt-4 pb-4 md:pt-16">
+                    <div className="flex flex-col items-center md:items-start flex-1 w-full">
+                      <img
+                        src={LOGO}
+                        alt="King Food"
+                        className="w-20 h-20 md:w-32 md:h-32 object-contain mb-3 rounded-2xl"
+                        decoding="async"
+                        fetchPriority="high"
+                      />
+
+                      <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-1 tracking-tight">King Food</h1>
+                      <p className="text-sm md:text-base text-white/50 mb-2">
+                        O açaí BR da saudade · Columbus, OH
+                      </p>
+
+                      <p
+                        className={`text-xs font-semibold mb-3 ${openStatus.open ? "text-emerald-400" : "text-white/50"}`}
+                      >
+                        {openStatus.open ? "● " : "○ "}
+                        {openStatus.label}
+                        {openStatus.detail ? ` · ${openStatus.detail}` : ""}
+                      </p>
+
+                      <p className="text-sm md:text-base text-white/70 leading-relaxed mb-5 max-w-md">
+                        Feito pra quem sente falta do Brasil. Açaí de verdade, delivery rápido.
+                      </p>
+
                       <button
                         type="button"
                         onClick={openMenu}
-                        className="mt-4 w-full min-h-[52px] rounded-2xl bg-[#FFD100] text-black font-bold text-base active:scale-[0.98] transition"
+                        ref={ctaPrimaryRef}
+                        className="w-full md:w-auto md:min-w-[240px] min-h-[52px] bg-[#FFD100] hover:bg-[#FFD100]/90 text-black font-bold py-3.5 rounded-2xl text-base shadow-lg shadow-[#FFD100]/20 active:scale-[0.98] transition will-change-transform"
                       >
-                        {openStatus.open ? "Pedir agora" : "Ver cardápio"}
+                        {openStatus.open ? "Pedir agora →" : "Ver cardápio →"}
                       </button>
-        </main>
-      ) : tab === "home" ? (
-        <main ref={mainRef} className="flex-1 overflow-y-auto md:pb-6 pb-14">
-          <div className="max-w-sm md:max-w-4xl mx-auto flex flex-col md:flex-row md:items-center md:gap-12 text-center md:text-left px-5 pt-6 pb-4 md:pt-16">
-            <div className="flex flex-col items-center md:items-start flex-1 w-full">
-              <img
-                src={LOGO}
-                alt="King Food"
-                className="w-20 h-20 md:w-32 md:h-32 object-contain mb-3 rounded-2xl"
-                decoding="async"
-                fetchPriority="high"
-              />
 
-              <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-1 tracking-tight">King Food</h1>
-                            <p className="text-sm md:text-base text-white/50 mb-2">
-                              O açaí BR da saudade · Columbus, OH
-                            </p>
+                      <a
+                        href={GROUP_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 min-h-[44px] inline-flex items-center text-sm font-semibold text-white/55 hover:text-white/85 underline-offset-4 hover:underline transition"
+                      >
+                        Entrar no grupo e pegar novidade
+                      </a>
 
-                            <p
-                              className={`text-xs font-semibold mb-3 ${openStatus.open ? "text-emerald-400" : "text-white/50"}`}
-                            >
-                              {openStatus.open ? "● " : "○ "}
-                              {openStatus.label}
-                              {openStatus.detail ? ` · ${openStatus.detail}` : ""}
-                            </p>
+                      {canInstall && (
+                        <button
+                          type="button"
+                          onClick={() => setShowInstallModal(true)}
+                          className="mt-2 min-h-[44px] text-sm font-medium text-white/40 hover:text-white/70 py-1.5 transition"
+                        >
+                          + Instalar app
+                        </button>
+                      )}
+                    </div>
 
-                            <p className="text-sm md:text-base text-white/70 leading-relaxed mb-5 max-w-md">
-                              Feito pra quem sente falta do Brasil. Açaí de verdade, delivery rápido.
-                            </p>
+                    <div className="hidden md:flex flex-col gap-4 flex-1 mt-0">
+                      <a
+                        href={MAPS_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 active:scale-[0.98] transition min-h-[72px]"
+                      >
+                        <div className="shrink-0 w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <GoogleGIcon className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">Google Business</p>
+                          <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
+                          <p className="text-xs text-white/40">Maps · Columbus, OH</p>
+                        </div>
+                      </a>
 
-                            {/* Primary CTA only */}
-                            <button
-                              type="button"
-                              onClick={openMenu}
-                              ref={ctaPrimaryRef}
-                              className="w-full md:w-auto md:min-w-[240px] min-h-[52px] bg-[#FFD100] hover:bg-[#FFD100]/90 text-black font-bold py-3.5 rounded-2xl text-base shadow-lg shadow-[#FFD100]/20 active:scale-[0.98] transition will-change-transform"
-                            >
-                              {openStatus.open ? "Pedir agora →" : "Ver cardápio →"}
-                            </button>
+                      <div className="grid grid-cols-2 gap-3">
+                        <a
+                          href={WA_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
+                        >
+                          <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-white">WhatsApp</p>
+                            <p className="text-[10px] text-white/40">Chamar agora</p>
+                          </div>
+                        </a>
+                        <a
+                          href={INSTAGRAM_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
+                        >
+                          <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="url(#ig-grad)" strokeWidth="2">
+                            <defs>
+                              <linearGradient id="ig-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#f09433" />
+                                <stop offset="50%" stopColor="#e6683c" />
+                                <stop offset="100%" stopColor="#dc2743" />
+                              </linearGradient>
+                            </defs>
+                            <rect x="2" y="2" width="20" height="20" rx="5" />
+                            <circle cx="12" cy="12" r="4" />
+                            <circle cx="17.5" cy="6.5" r="1" fill="url(#ig-grad)" stroke="none" />
+                          </svg>
+                          <div>
+                            <p className="text-xs font-bold text-white">Instagram</p>
+                            <p className="text-[10px] text-white/40">@king.food_delivery</p>
+                          </div>
+                        </a>
+                      </div>
 
-                            {/* Secondary — text link, not competing button */}
-                            <a
-                              href={GROUP_URL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-3 min-h-[44px] inline-flex items-center text-sm font-semibold text-white/55 hover:text-white/85 underline-offset-4 hover:underline transition"
-                            >
-                              Entrar no grupo e pegar novidade
-                            </a>
-
-              {canInstall && (
-                <button
-                  type="button"
-                  onClick={() => setShowInstallModal(true)}
-                  className="mt-2 min-h-[44px] text-sm font-medium text-white/40 hover:text-white/70 py-1.5 transition"
-                >
-                  + Instalar app
-                </button>
-              )}
-            </div>
-
-            {/* Desktop info cards */}
-            <div className="hidden md:flex flex-col gap-4 flex-1 mt-0">
-              <a
-                href={MAPS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 active:scale-[0.98] transition min-h-[72px]"
-              >
-                <div className="shrink-0 w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
-                  <GoogleGIcon className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-white">Google Business</p>
-                                    <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
-                                    <p className="text-xs text-white/40">Maps · Columbus, OH</p>
-                                  </div>
-                                </a>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                  <a
-                                    href={WA_URL}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
-                                  >
-                                    <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
-                                    <div>
-                                      <p className="text-xs font-bold text-white">WhatsApp</p>
-                                      <p className="text-[10px] text-white/40">Chamar agora</p>
-                                    </div>
-                                  </a>
-                <a
-                  href={INSTAGRAM_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
-                >
-                  <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="url(#ig-grad)" strokeWidth="2">
-                    <defs>
-                      <linearGradient id="ig-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#f09433" />
-                        <stop offset="50%" stopColor="#e6683c" />
-                        <stop offset="100%" stopColor="#dc2743" />
-                      </linearGradient>
-                    </defs>
-                    <rect x="2" y="2" width="20" height="20" rx="5" />
-                    <circle cx="12" cy="12" r="4" />
-                    <circle cx="17.5" cy="6.5" r="1" fill="url(#ig-grad)" stroke="none" />
-                  </svg>
-                  <div>
-                    <p className="text-xs font-bold text-white">Instagram</p>
-                    <p className="text-[10px] text-white/40">@king.food_delivery</p>
+                      <button
+                        type="button"
+                        onClick={goHours}
+                        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 active:scale-[0.98] transition text-left min-h-[72px]"
+                      >
+                        <span className="text-2xl" aria-hidden>
+                          🕐
+                        </span>
+                        <div>
+                          <p className="text-sm font-bold text-white">Horários e entrega</p>
+                          <p className="text-xs text-white/40">
+                            {openStatus.label} · delivery em até 40 min
+                          </p>
+                        </div>
+                      </button>
+                    </div>
                   </div>
-                </a>
-              </div>
 
-              <button
-                type="button"
-                onClick={goHours}
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 active:scale-[0.98] transition text-left min-h-[72px]"
-              >
-                <span className="text-2xl" aria-hidden>
-                  🕐
-                </span>
-                <div>
-                  <p className="text-sm font-bold text-white">Horários e entrega</p>
-                                    <p className="text-xs text-white/40">
-                                      {openStatus.label} · delivery em até 40 min
-                                    </p>
-                                  </div>
-                                </button>
-                              </div>
-                            </div>
+                  <div className="md:hidden">
+                    <div className="w-full mt-5 text-left px-5">
+                      <h2 className="text-sm font-extrabold text-white mb-2.5">Avaliações</h2>
+                      <a
+                        href={MAPS_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 active:scale-[0.98] transition min-h-[64px]"
+                      >
+                        <div className="shrink-0 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <GoogleGIcon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">Google Business</p>
+                          <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
+                          <p className="text-xs text-white/40">Maps · Columbus, OH</p>
+                        </div>
+                      </a>
+                    </div>
 
-                            {/* Mobile cards */}
-                            <div className="md:hidden">
-                              <div className="w-full mt-5 text-left px-5">
-                                <h2 className="text-sm font-extrabold text-white mb-2.5">Avaliações</h2>
-                                <a
-                                  href={MAPS_URL}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 active:scale-[0.98] transition min-h-[64px]"
-                                >
-                                  <div className="shrink-0 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                    <GoogleGIcon className="w-5 h-5" />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-bold text-white">Google Business</p>
-                                    <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
-                                    <p className="text-xs text-white/40">Maps · Columbus, OH</p>
-                                  </div>
-                                </a>
-                              </div>
-
-                              <div className="w-full mt-4 text-left px-5 pb-4">
-                                <h2 className="text-sm font-extrabold text-white mb-2.5">Contato</h2>
-                                <div className="grid grid-cols-2 gap-3">
-                                  <a
-                                    href={WA_URL}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
-                                  >
-                                    <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
-                                    <div>
-                                      <p className="text-xs font-bold text-white">WhatsApp</p>
-                                      <p className="text-[10px] text-white/40">Chamar agora</p>
-                                    </div>
-                                  </a>
-                <a
-                  href={INSTAGRAM_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
-                >
-                  <svg
-                    className="w-5 h-5 shrink-0"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="url(#ig-grad-m)"
-                    strokeWidth="2"
-                  >
-                    <defs>
-                      <linearGradient id="ig-grad-m" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#f09433" />
-                        <stop offset="50%" stopColor="#e6683c" />
-                        <stop offset="100%" stopColor="#dc2743" />
-                      </linearGradient>
-                    </defs>
-                    <rect x="2" y="2" width="20" height="20" rx="5" />
-                    <circle cx="12" cy="12" r="4" />
-                    <circle cx="17.5" cy="6.5" r="1" fill="url(#ig-grad-m)" stroke="none" />
-                  </svg>
-                  <div>
-                    <p className="text-xs font-bold text-white">Instagram</p>
-                    <p className="text-[10px] text-white/40">@king.food_delivery</p>
+                    <div className="w-full mt-4 text-left px-5 pb-4">
+                      <h2 className="text-sm font-extrabold text-white mb-2.5">Contato</h2>
+                      <div className="grid grid-cols-2 gap-3">
+                        <a
+                          href={WA_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
+                        >
+                          <WhatsAppIcon className="w-5 h-5 text-[#25D366] shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-white">WhatsApp</p>
+                            <p className="text-[10px] text-white/40">Chamar agora</p>
+                          </div>
+                        </a>
+                        <a
+                          href={INSTAGRAM_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 hover:bg-white/10 active:scale-[0.97] transition min-h-[64px]"
+                        >
+                          <svg
+                            className="w-5 h-5 shrink-0"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="url(#ig-grad-m)"
+                            strokeWidth="2"
+                          >
+                            <defs>
+                              <linearGradient id="ig-grad-m" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#f09433" />
+                                <stop offset="50%" stopColor="#e6683c" />
+                                <stop offset="100%" stopColor="#dc2743" />
+                              </linearGradient>
+                            </defs>
+                            <rect x="2" y="2" width="20" height="20" rx="5" />
+                            <circle cx="12" cy="12" r="4" />
+                            <circle cx="17.5" cy="6.5" r="1" fill="url(#ig-grad-m)" stroke="none" />
+                          </svg>
+                          <div>
+                            <p className="text-xs font-bold text-white">Instagram</p>
+                            <p className="text-[10px] text-white/40">@king.food_delivery</p>
+                          </div>
+                        </a>
+                      </div>
+                    </div>
                   </div>
-                </a>
-              </div>
+                </main>
+              ) : null}
             </div>
-          </div>
-        </main>
-      ) : null}
 
       <InstallModal open={showInstallModal} onInstall={handleInstall} onDismiss={dismissInstallModal} />
 
