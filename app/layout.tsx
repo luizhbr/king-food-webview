@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
+import OneSignalInit from "./components/OneSignalInit";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://kingfood.online"),
@@ -103,9 +104,10 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: earlyPwaScript }} />
       </head>
       <body className="antialiased bg-black text-white">
-        {children}
-        <Analytics />
-      </body>
+              {children}
+              <OneSignalInit />
+              <Analytics />
+            </body>
     </html>
   );
 }
