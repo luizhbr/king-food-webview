@@ -3,6 +3,19 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 const MENU_URL = "https://kingfood.fe-v2.ola.click/products";
+const MENU_ORIGIN = "https://kingfood.fe-v2.ola.click";
+/** Fase C — menor privilégio no iframe Olaclick (testar checkout no preview). */
+const MENU_IFRAME_SANDBOX = [
+  "allow-scripts",
+  "allow-same-origin",
+  "allow-forms",
+  "allow-popups",
+  "allow-popups-to-escape-sandbox",
+  "allow-downloads",
+  "allow-top-navigation-by-user-activation",
+].join(" ");
+const MENU_IFRAME_ALLOW =
+  "payment *; publickey-credentials-get *";
 const WA_URL = "https://wa.me/12673107535";
 const GROUP_URL = "https://chat.whatsapp.com/LtoVNE9AJ2u2nlrlruTxhd";
 const MAPS_URL = "https://maps.app.goo.gl/GR2gpipSMqZdH9Xy5";
@@ -659,6 +672,23 @@ export default function Home() {
       return () => window.clearTimeout(warm);
     }, [loading]);
 
+    // Fase C — ignora postMessage de origens estranhas (defesa se algo escutar no futuro)
+    useEffect(() => {
+      const onMessage = (event: MessageEvent) => {
+        if (!event.origin) return;
+        const allowed =
+          event.origin === MENU_ORIGIN ||
+          event.origin.endsWith(".ola.click") ||
+          event.origin === window.location.origin;
+        if (!allowed) {
+          // Não processa payload de terceiros
+          return;
+        }
+      };
+      window.addEventListener("message", onMessage);
+      return () => window.removeEventListener("message", onMessage);
+    }, []);
+
     // Timeout de falha só conta com o usuário na aba cardápio
     useEffect(() => {
       if (tab !== "menu" || !menuMounted || iframeReady) return;
@@ -956,19 +986,20 @@ export default function Home() {
                       </div>
                     )}
                     <iframe
-                      src={MENU_URL}
-                      className={`absolute inset-0 w-full h-full border-0 transition-opacity duration-500 ease-out ${
-                        iframeReady ? "opacity-100" : "opacity-0"
-                      }`}
-                      title="Cardápio King Food"
-                      allow="payment"
-                      loading="eager"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      onLoad={() => {
-                        setIframeReady(true);
-                        setIframeError(false);
-                      }}
-                    />
+                                          src={MENU_URL}
+                                          className={`absolute inset-0 w-full h-full border-0 transition-opacity duration-500 ease-out ${
+                                            iframeReady ? "opacity-100" : "opacity-0"
+                                          }`}
+                                          title="Cardápio King Food"
+                                          sandbox={MENU_IFRAME_SANDBOX}
+                                          allow={MENU_IFRAME_ALLOW}
+                                          loading="eager"
+                                          referrerPolicy="strict-origin-when-cross-origin"
+                                          onLoad={() => {
+                                            setIframeReady(true);
+                                            setIframeError(false);
+                                          }}
+                                        />
                   </>
                 )}
               </div>
