@@ -60,7 +60,42 @@ a {
   }
 }
 
-/* Splash — corpinhos de açaí */
+/* Dock inferior (mobile) — altura fixa p/ conteúdo nunca passar por baixo */
+:root {
+  --kf-nav-h: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* App shell: viewport dinâmico (mobile não “come” a nav) */
+.kf-app-shell {
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 100dvh;
+}
+
+@supports not (height: 100dvh) {
+  .kf-app-shell {
+    height: 100vh;
+    max-height: 100vh;
+    min-height: 100vh;
+  }
+}
+
+/* Conteúdo termina acima do dock */
+.kf-content-above-nav {
+  bottom: var(--kf-nav-h);
+}
+
+@media (min-width: 768px) {
+  .kf-content-above-nav {
+    bottom: 0;
+  }
+}
+
+/* Nav dock fixa */
+.kf-bottom-nav {
+  height: var(--kf-nav-h);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 @keyframes kf-acai-pop {
   0% {
     opacity: 0;

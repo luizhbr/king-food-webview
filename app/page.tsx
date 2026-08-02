@@ -752,17 +752,17 @@ export default function Home() {
     tab === "menu" ? "Cardápio" : tab === "hours" ? "Horários" : "Açaí BR · Delivery";
 
   return (
-      <div
-        className="flex flex-col h-screen overflow-hidden relative"
-        style={{
-          background: `linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.15) 100%), url('/bg-acai.jpg') center/cover no-repeat`,
-        }}
-      >
-        {loading && <SplashScreen exiting={splashExiting} />}
-      {/* Header */}
-      <header
-        className={`shrink-0 z-40 text-white border-b transition-all duration-300 ${scrolled || tab !== "home" ? "bg-black/60 backdrop-blur-md border-white/10" : "bg-transparent border-transparent"}`}
-      >
+        <div
+          className="kf-app-shell flex flex-col overflow-hidden relative"
+          style={{
+            background: `linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.15) 100%), url('/bg-acai.jpg') center/cover no-repeat`,
+          }}
+        >
+          {loading && <SplashScreen exiting={splashExiting} />}
+        {/* Header */}
+        <header
+          className={`shrink-0 z-40 text-white border-b transition-all duration-300 ${scrolled || tab !== "home" ? "bg-black/60 backdrop-blur-md border-white/10" : "bg-transparent border-transparent"}`}
+        >
         <div className="flex items-center justify-between px-4 py-2 max-w-5xl mx-auto w-full gap-2">
           <div className="flex items-center gap-3 min-w-0">
             <button
@@ -943,9 +943,10 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* Shell de conteúdo — irmã da bottom nav (não passa por baixo dela) */}
-                  <div className="flex-1 relative min-h-0 w-full max-w-5xl mx-auto">
-                    {/* Cardápio preenche 100% do shell; nav é elemento separado abaixo */}
+      {/* Conteúdo: ocupa a tela até o topo do dock (nav fixa por baixo, estilo SO) */}
+            <div className="relative flex-1 min-h-0 w-full max-w-5xl mx-auto md:pb-0 pb-[var(--kf-nav-h)]">
+              <div className="absolute inset-0 md:inset-0 kf-content-above-nav md:bottom-0">
+                    {/* Cardápio — 100% da área acima da nav */}
                     <div
                       className={`absolute inset-0 bg-white transition-opacity duration-300 ease-out ${
                         tab === "menu"
@@ -1269,106 +1270,107 @@ export default function Home() {
                   </div>
                 </main>
               ) : null}
-            </div>
+                          </div>
+                    </div>
 
-      <InstallModal
-              open={showInstallModal}
-              onInstall={handleInstall}
-              onDismiss={dismissInstallModal}
-              platform={installPlatform}
-              hasNativePrompt={hasNativePrompt}
-            />
+                    <InstallModal
+                            open={showInstallModal}
+                            onInstall={handleInstall}
+                            onDismiss={dismissInstallModal}
+                            platform={installPlatform}
+                            hasNativePrompt={hasNativePrompt}
+                          />
 
-            {/* Soft install banner — acima da bottom nav no fluxo */}
-                        {showInstallBanner && !showInstallModal && tab === "home" && (
-                          <div className="absolute bottom-3 md:bottom-4 left-0 right-0 z-[90] px-4 pointer-events-none">
-                <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl p-3 shadow-2xl flex items-center gap-3">
-                  <div className="shrink-0 w-10 h-10 rounded-xl bg-[#FFD100] overflow-hidden">
-                                      <img src={LOGO} alt="" className="w-full h-full object-cover" decoding="async" />
-                                    </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-white">Peça mais rápido</p>
-                    <p className="text-xs text-white/50 leading-snug">
-                      {installPlatform === "ios"
-                        ? "Compartilhar → Tela de Início"
-                        : "App na tela inicial do celular"}
-                    </p>
+                          {/* Soft install banner — acima do dock fixo */}
+                          {showInstallBanner && !showInstallModal && tab === "home" && (
+                            <div className="fixed left-0 right-0 z-[90] px-4 pointer-events-none bottom-[calc(var(--kf-nav-h)+0.75rem)] md:bottom-4">
+                              <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl p-3 shadow-2xl flex items-center gap-3">
+                                <div className="shrink-0 w-10 h-10 rounded-xl bg-[#FFD100] overflow-hidden">
+                                  <img src={LOGO} alt="" className="w-full h-full object-cover" decoding="async" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-white">Peça mais rápido</p>
+                                  <p className="text-xs text-white/50 leading-snug">
+                                    {installPlatform === "ios"
+                                      ? "Compartilhar → Tela de Início"
+                                      : "App na tela inicial do celular"}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setInstallPlatform(detectInstallPlatform());
+                                    if (deferredPrompt.current || window.__kfDeferredPrompt) {
+                                      void handleInstall();
+                                    } else {
+                                      setShowInstallModal(true);
+                                    }
+                                  }}
+                                  className="shrink-0 min-h-[40px] rounded-xl bg-[#FFD100] px-3 py-2 text-xs font-bold text-black active:scale-95 transition"
+                                >
+                                  {installPlatform === "ios" ? "Ver" : "Instalar"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowInstallBanner(false);
+                                    sessionStorage.setItem(INSTALL_DISMISS_KEY, "1");
+                                  }}
+                                  className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white/30 hover:text-white/60 transition"
+                                  aria-label="Fechar"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                    {/* Dock inferior fixo — sempre visível no mobile (estilo barra do SO) */}
+                    <nav
+                      className="kf-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-stretch bg-black/95 backdrop-blur-xl border-t border-white/10 px-2 pt-1"
+                      aria-label="Navegação inferior"
+                    >
+                      <div className="flex items-center justify-evenly max-w-md mx-auto w-full self-start">
+                        <button
+                          type="button"
+                          onClick={goHome}
+                          className={`flex flex-col items-center justify-center gap-0.5 min-w-[88px] min-h-[52px] py-1 rounded-lg transition active:scale-90 ${tab === "home" ? "text-[#FFD100]" : "text-white/40"}`}
+                          aria-current={tab === "home" ? "page" : undefined}
+                        >
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 12l9-9 9 9" />
+                            <path d="M5 10v10h14V10" />
+                          </svg>
+                          <span className="text-[10px] font-semibold">Início</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={openMenu}
+                          className={`flex flex-col items-center justify-center gap-0.5 min-w-[88px] min-h-[52px] py-1 rounded-lg transition active:scale-90 ${tab === "menu" ? "text-[#FFD100]" : "text-white/40"}`}
+                          aria-current={tab === "menu" ? "page" : undefined}
+                        >
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="4" y="3" width="16" height="18" rx="2" />
+                            <line x1="8" y1="8" x2="16" y2="8" />
+                            <line x1="8" y1="12" x2="16" y2="12" />
+                            <line x1="8" y1="16" x2="13" y2="16" />
+                          </svg>
+                          <span className="text-[10px] font-semibold">Cardápio</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={goHours}
+                          className={`flex flex-col items-center justify-center gap-0.5 min-w-[88px] min-h-[52px] py-1 rounded-lg transition active:scale-90 ${tab === "hours" ? "text-[#FFD100]" : "text-white/40"}`}
+                          aria-current={tab === "hours" ? "page" : undefined}
+                        >
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="9" />
+                            <polyline points="12 7 12 12 15 14" />
+                          </svg>
+                          <span className="text-[10px] font-semibold">Horários</span>
+                        </button>
+                      </div>
+                    </nav>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setInstallPlatform(detectInstallPlatform());
-                      if (deferredPrompt.current || window.__kfDeferredPrompt) {
-                        void handleInstall();
-                      } else {
-                        setShowInstallModal(true);
-                      }
-                    }}
-                    className="shrink-0 min-h-[40px] rounded-xl bg-[#FFD100] px-3 py-2 text-xs font-bold text-black active:scale-95 transition"
-                  >
-                    {installPlatform === "ios" ? "Ver" : "Instalar"}
-                  </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowInstallBanner(false);
-                sessionStorage.setItem(INSTALL_DISMISS_KEY, "1");
-              }}
-              className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white/30 hover:text-white/60 transition"
-              aria-label="Fechar"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Bottom nav — chrome separado no fluxo (não fixed por cima do iframe) */}
-            <nav
-              className="md:hidden shrink-0 z-30 bg-black/90 backdrop-blur-xl border-t border-white/10 px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
-              aria-label="Navegação inferior"
-            >
-        <div className="flex items-center justify-evenly max-w-md mx-auto">
-          <button
-            type="button"
-            onClick={goHome}
-            className={`flex flex-col items-center justify-center gap-0.5 min-w-[88px] min-h-[52px] py-1 rounded-lg transition active:scale-90 ${tab === "home" ? "text-[#FFD100]" : "text-white/40"}`}
-            aria-current={tab === "home" ? "page" : undefined}
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 12l9-9 9 9" />
-              <path d="M5 10v10h14V10" />
-            </svg>
-            <span className="text-[10px] font-semibold">Início</span>
-          </button>
-          <button
-            type="button"
-            onClick={openMenu}
-            className={`flex flex-col items-center justify-center gap-0.5 min-w-[88px] min-h-[52px] py-1 rounded-lg transition active:scale-90 ${tab === "menu" ? "text-[#FFD100]" : "text-white/40"}`}
-            aria-current={tab === "menu" ? "page" : undefined}
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="4" y="3" width="16" height="18" rx="2" />
-              <line x1="8" y1="8" x2="16" y2="8" />
-              <line x1="8" y1="12" x2="16" y2="12" />
-              <line x1="8" y1="16" x2="13" y2="16" />
-            </svg>
-            <span className="text-[10px] font-semibold">Cardápio</span>
-          </button>
-          <button
-            type="button"
-            onClick={goHours}
-            className={`flex flex-col items-center justify-center gap-0.5 min-w-[88px] min-h-[52px] py-1 rounded-lg transition active:scale-90 ${tab === "hours" ? "text-[#FFD100]" : "text-white/40"}`}
-            aria-current={tab === "hours" ? "page" : undefined}
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="9" />
-              <polyline points="12 7 12 12 15 14" />
-            </svg>
-            <span className="text-[10px] font-semibold">Horários</span>
-          </button>
-        </div>
-      </nav>
-    </div>
-  );
-}
+                );
+              }
