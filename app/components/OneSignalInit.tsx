@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type OneSignal from "react-onesignal";
 
 /** OneSignal App ID — King Food Web (dashboard). */
@@ -11,15 +11,16 @@ type Status = "loading" | "ready" | "subscribed" | "blocked" | "unsupported" | "
 type OS = typeof OneSignal;
 
 /**
- * OneSignal Web Push — worker em /push/onesignal/ (não conflita com /sw.js).
- * Browsers exigem gesto do usuário para o prompt nativo: banner com botão.
- * Site URL no dashboard OneSignal DEVE ser o mesmo origin (preview ou kingfood.online).
+ * OneSignal Web Push integrado ao SW PWA (/sw.js com importScripts OneSignal).
+ * Banner com botão — browsers exigem gesto do usuário.
+ * Dashboard: Site URL = origin atual; path SW padrão OneSignalSDKWorker.js (alias → /sw.js).
  */
 export default function OneSignalInit() {
   const [status, setStatus] = useState<Status>("loading");
   const [showBanner, setShowBanner] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [onesignal, setOnesignal] = useState<OS | null>(null);
+  const [errMsg, setErrMsg] = useState("");
+  const osRef = useRef<OS | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -29,51 +30,66 @@ export default function OneSignalInit() {
     }
 
     let cancelled = false;
+    const showLater = (ms: number) => {
+      window.setTimeout(() => {
+        if (!cancelled && sessionStorage.getItem(DISMISS_KEY) !== "1") {
+          setShowBanner(true);
+        }
+      }, ms);
+    };
 
     (async () => {
       try {
+        if (Notification.permission === "denied") {
+          setStatus("blocked");
+          showLater(1200);
+          return;
+        }
+
         const mod = await import("react-onesignal");
         const OS = mod.default;
         if (cancelled) return;
 
         try {
-          await OS.Debug.setLogLevel("warn");
+          await OS.Debug.setLogLevel("debug");
         } catch {
           /* ignore */
         }
 
+        // SW unificado: /sw.js já tem importScripts OneSignal (mesmo worker do PWA)
         await OS.init({
           appId: ONESIGNAL_APP_ID,
-          serviceWorkerPath: "push/onesignal/OneSignalSDKWorker.js",
-          serviceWorkerParam: { scope: "/push/onesignal/" },
+          serviceWorkerPath: "sw.js",
+          serviceWorkerParam: { scope: "/" },
           allowLocalhostAsSecureOrigin: true,
+          notifyButton: { enable: false },
         } as Parameters<OS["init"]>[0]);
 
         if (cancelled) return;
-        setOnesignal(OS);
-
-        const perm = Notification.permission;
-        if (perm === "denied") {
-          setStatus("blocked");
-          return;
-        }
+        osRef.current = OS;
 
         const optedIn = OS.User?.PushSubscription?.optedIn === true;
-        if (optedIn || perm === "granted") {
+        if (optedIn) {
           setStatus("subscribed");
+          return;
+        }
+        if (Notification.permission === "denied") {
+          setStatus("blocked");
+          showLater(1200);
           return;
         }
 
         setStatus("ready");
-        const dismissed = sessionStorage.getItem(DISMISS_KEY) === "1";
-        if (!dismissed) {
-          window.setTimeout(() => {
-            if (!cancelled) setShowBanner(true);
-          }, 4_000);
-        }
+        showLater(2000);
       } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
         console.error("[KF OneSignal] init failed", err);
-        if (!cancelled) setStatus("error");
+        if (!cancelled) {
+          setErrMsg(msg.slice(0, 140));
+          setStatus("error");
+          // Mostra banner mesmo com erro pra debug + retry
+          showLater(800);
+        }
       }
     })();
 
@@ -83,38 +99,58 @@ export default function OneSignalInit() {
   }, []);
 
   const enablePush = useCallback(async () => {
-    if (!onesignal || busy) return;
+    if (busy) return;
     setBusy(true);
+    setErrMsg("");
     try {
+      let OS = osRef.current;
+      if (!OS) {
+        // retry init no clique
+        const mod = await import("react-onesignal");
+        OS = mod.default;
+        await OS.init({
+          appId: ONESIGNAL_APP_ID,
+          serviceWorkerPath: "sw.js",
+          serviceWorkerParam: { scope: "/" },
+          allowLocalhostAsSecureOrigin: true,
+          notifyButton: { enable: false },
+        } as Parameters<OS["init"]>[0]);
+        osRef.current = OS;
+      }
+
       try {
-        await onesignal.Slidedown.promptPush({ force: true });
-      } catch {
-        /* fallback */
+        await OS.Slidedown.promptPush({ force: true });
+      } catch (e) {
+        console.warn("[KF OneSignal] slidedown", e);
       }
 
       if (Notification.permission === "default") {
-        await onesignal.Notifications.requestPermission();
+        await OS.Notifications.requestPermission();
       }
 
       if (Notification.permission === "granted") {
         try {
-          await onesignal.User.PushSubscription.optIn();
+          await OS.User.PushSubscription.optIn();
         } catch {
           /* already */
         }
+        await new Promise((r) => setTimeout(r, 1200));
         setStatus("subscribed");
         setShowBanner(false);
       } else if (Notification.permission === "denied") {
         setStatus("blocked");
-        setShowBanner(false);
+      } else {
+        setErrMsg("Permissão não concedida.");
       }
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       console.error("[KF OneSignal] enable failed", err);
+      setErrMsg(msg.slice(0, 140));
       setStatus("error");
     } finally {
       setBusy(false);
     }
-  }, [onesignal, busy]);
+  }, [busy]);
 
   const dismiss = () => {
     sessionStorage.setItem(DISMISS_KEY, "1");
@@ -132,7 +168,7 @@ export default function OneSignalInit() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-white">Notificações bloqueadas</p>
             <p className="text-xs text-white/50 mt-0.5 leading-snug">
-              No Chrome: cadeado ao lado da URL → Notificações → Permitir.
+              Cadeado na URL → Notificações → Permitir → recarregar.
             </p>
           </div>
           <button
@@ -148,8 +184,6 @@ export default function OneSignalInit() {
     );
   }
 
-  if (status !== "ready" && status !== "error") return null;
-
   return (
     <div className="fixed bottom-16 md:bottom-4 left-0 right-0 z-[95] px-4 pointer-events-none">
       <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-[#FFD100]/30 bg-black/95 backdrop-blur-xl p-3 shadow-2xl flex items-center gap-3">
@@ -159,11 +193,11 @@ export default function OneSignalInit() {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-white">Ofertas e novidades</p>
           <p className="text-xs text-white/50 leading-snug">
-            Ative o aviso quando tiver promo ou açaí fresco.
+            Ative o aviso de promo e açaí fresco.
           </p>
-          {status === "error" && (
-            <p className="text-[10px] text-red-400 mt-1">
-              Falha ao conectar. Confira Site URL no OneSignal = este domínio.
+          {(status === "error" || errMsg) && (
+            <p className="text-[10px] text-red-400 mt-1 break-words">
+              {errMsg || "Falha SDK. Site URL no OneSignal = este domínio."}
             </p>
           )}
         </div>

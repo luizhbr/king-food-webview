@@ -1,5 +1,7 @@
-/* King Food SW v5 — HTML/JS network-first; nunca cacheia /api */
-const CACHE = "king-food-v5";
+/* King Food SW v6 — PWA + OneSignal Web Push (mesmo worker na raiz) */
+importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
+
+const CACHE = "king-food-v6";
 const PRECACHE = [
   "/logo-kingfood.png.png",
   "/bg-acai.jpg",

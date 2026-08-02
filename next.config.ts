@@ -96,17 +96,33 @@ const nextConfig: NextConfig = {
               ],
             },
             {
+              source: "/OneSignalSDKWorker.js",
+              headers: [
+                {
+                  key: "Cache-Control",
+                  value: "public, max-age=0, must-revalidate",
+                },
+                { key: "Service-Worker-Allowed", value: "/" },
+              ],
+            },
+            {
+              source: "/OneSignalSDKUpdaterWorker.js",
+              headers: [
+                {
+                  key: "Cache-Control",
+                  value: "public, max-age=0, must-revalidate",
+                },
+                { key: "Service-Worker-Allowed", value: "/" },
+              ],
+            },
+            {
               source: "/push/onesignal/:path*",
               headers: [
                 {
                   key: "Cache-Control",
                   value: "public, max-age=0, must-revalidate",
                 },
-                { key: "Service-Worker-Allowed", value: "/push/onesignal/" },
-                {
-                  key: "Content-Type",
-                  value: "application/javascript; charset=utf-8",
-                },
+                { key: "Service-Worker-Allowed", value: "/" },
               ],
             },
       {
