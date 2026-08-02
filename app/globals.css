@@ -9,10 +9,11 @@ html {
 body {
   margin: 0;
   padding: 0;
-  background: #ffffff;
-  color: #0a0a0a;
+  background: #000000;
+  color: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* Hide scrollbar but keep scroll */
@@ -28,6 +29,12 @@ body {
 button,
 a {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* GPU hint for animated CTAs without changing look */
+.will-change-transform {
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 /* === Animations === */

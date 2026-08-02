@@ -3,6 +3,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://kingfood.online"),
   title: "King Food | Açaí Premium Delivery em Columbus, OH",
   description:
     "O verdadeiro sabor do Brasil em Columbus. Açaís premium, combos e delivery rápido. Peça agora no King Food.",
@@ -56,6 +57,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  viewportFit: "cover",
 };
 
 /** Captura beforeinstallprompt o mais cedo possível (antes do React hidratar). */
@@ -67,24 +69,16 @@ const earlyPwaScript = `
       e.preventDefault();
       window.__kfDeferredPrompt = e;
       window.dispatchEvent(new Event('kf-beforeinstallprompt'));
-      console.log('[King Food PWA] beforeinstallprompt capturado');
     });
     window.addEventListener('appinstalled', function () {
       window.__kfDeferredPrompt = null;
-      console.log('[King Food PWA] app instalado');
     });
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('/sw.js').then(function (reg) {
-          console.log('[King Food PWA] SW registrado', reg.scope);
-        }).catch(function (err) {
-          console.warn('[King Food PWA] SW falhou', err);
-        });
+        navigator.serviceWorker.register('/sw.js').catch(function () {});
       });
     }
-  } catch (err) {
-    console.warn('[King Food PWA] init error', err);
-  }
+  } catch (err) {}
 })();
 `;
 
@@ -97,9 +91,13 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <link rel="preconnect" href="https://kingfood.fe-v2.ola.click" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://kingfood.fe-v2.ola.click" />
+        <link rel="preload" href="/bg-acai.jpg" as="image" type="image/jpeg" />
+        <link rel="preload" href="/logo-kingfood.png.png" as="image" type="image/png" />
         <script dangerouslySetInnerHTML={{ __html: earlyPwaScript }} />
       </head>
-      <body className="antialiased bg-white text-black">
+      <body className="antialiased bg-black text-white">
         {children}
         <Analytics />
       </body>

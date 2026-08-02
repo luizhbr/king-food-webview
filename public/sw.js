@@ -1,16 +1,30 @@
-/* King Food SW v3 — network-first (never pin old HTML/JS) */
-const CACHE = "king-food-v3";
+/* King Food SW v4 — HTML/JS network-first, static assets cache-first */
+const CACHE = "king-food-v4";
+const PRECACHE = [
+  "/logo-kingfood.png.png",
+  "/bg-acai.jpg",
+  "/manifest.json",
+  "/icons/launchericon-192x192.png",
+  "/icons/launchericon-512x512.png",
+];
 
 self.addEventListener("install", (event) => {
-  // Activate immediately on new deploy
-  self.skipWaiting();
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((cache) => cache.addAll(PRECACHE).catch(() => undefined))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+      )
+      .then(() => self.clients.claim())
   );
 });
 
@@ -18,35 +32,49 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
 
-  const url = new URL(req.url);
+  let url;
+  try {
+    url = new URL(req.url);
+  } catch {
+    return;
+  }
 
-  // Only handle same-origin
+  // Only same-origin
   if (url.origin !== self.location.origin) return;
 
-  // Navigation / HTML / Next.js data: always network-first
   const isNav = req.mode === "navigate";
-  const isHtml = (req.headers.get("accept") || "").includes("text/html");
-  const isNextData = url.pathname.startsWith("/_next/");
+  const accept = req.headers.get("accept") || "";
+  const isHtml = accept.includes("text/html");
+  const isNext = url.pathname.startsWith("/_next/");
+  const isSw = url.pathname === "/sw.js";
 
-  if (isNav || isHtml || isNextData) {
+  // Never cache SW itself stale
+  if (isSw) {
+    event.respondWith(fetch(req));
+    return;
+  }
+
+  // Navigation / HTML / Next bundles: network-first (fresh deploys)
+  if (isNav || isHtml || isNext) {
     event.respondWith(
       fetch(req)
         .then((res) => res)
-        .catch(() => caches.match(req))
+        .catch(() => caches.match(req).then((c) => c || caches.match("/")))
     );
     return;
   }
 
-  // Static assets (logo, manifest): network-first, fallback cache
+  // Static assets: cache-first, then network + put
   event.respondWith(
-    fetch(req)
-      .then((res) => {
-        if (res && res.status === 200) {
+    caches.match(req).then((cached) => {
+      if (cached) return cached;
+      return fetch(req).then((res) => {
+        if (res && res.status === 200 && res.type === "basic") {
           const copy = res.clone();
           caches.open(CACHE).then((cache) => cache.put(req, copy));
         }
         return res;
-      })
-      .catch(() => caches.match(req))
+      });
+    })
   );
 });
