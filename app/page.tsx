@@ -179,16 +179,34 @@ function GoogleGIcon({ className }: { className?: string }) {
   );
 }
 
+function detectInstallPlatform(): "android" | "ios" | "desktop" {
+  if (typeof navigator === "undefined") return "desktop";
+  const ua = navigator.userAgent;
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isIOS) return "ios";
+  if (/Android/i.test(ua)) return "android";
+  return "desktop";
+}
+
 function InstallModal({
   open,
   onInstall,
   onDismiss,
+  platform,
+  hasNativePrompt,
 }: {
   open: boolean;
   onInstall: () => void;
   onDismiss: () => void;
+  platform: "android" | "ios" | "desktop";
+  hasNativePrompt: boolean;
 }) {
   if (!open) return null;
+
+  const showNativeButton = hasNativePrompt && platform !== "ios";
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-5">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onDismiss} aria-hidden />
@@ -202,24 +220,63 @@ function InstallModal({
           <img src={LOGO} alt="" className="h-11 w-11 object-contain" decoding="async" />
         </div>
         <h2 id="install-title" className="text-lg font-extrabold text-white">
-          Instale nosso app
+          Instale o King Food
         </h2>
         <p className="mt-2 text-sm text-white/60 leading-relaxed">
-          Peça mais rápido direto da tela inicial do seu celular.
+          Peça mais rápido direto da tela inicial do celular.
         </p>
-        <button
-          type="button"
-          onClick={onInstall}
-          className="mt-5 w-full min-h-[48px] rounded-2xl bg-[#FFD100] py-3.5 text-sm font-bold text-black shadow-lg shadow-[#FFD100]/20 active:scale-[0.98] transition"
-        >
-          Instalar agora
-        </button>
+
+        {platform === "ios" && (
+          <ol className="mt-4 text-left text-sm text-white/75 space-y-2.5 leading-snug">
+            <li>
+              1. Toque em <strong className="text-white">Compartilhar</strong>{" "}
+              <span aria-hidden>􀈂</span> (quadrado com seta) na barra do Safari
+            </li>
+            <li>
+              2. Role e toque em <strong className="text-white">Adicionar à Tela de Início</strong>
+            </li>
+            <li>
+              3. Confirme em <strong className="text-white">Adicionar</strong>
+            </li>
+          </ol>
+        )}
+
+        {platform === "android" && !hasNativePrompt && (
+          <ol className="mt-4 text-left text-sm text-white/75 space-y-2.5 leading-snug">
+            <li>
+              1. Toque no menu <strong className="text-white">⋮</strong> do Chrome
+            </li>
+            <li>
+              2. Toque em <strong className="text-white">Instalar app</strong> ou{" "}
+              <strong className="text-white">Adicionar à tela inicial</strong>
+            </li>
+            <li>3. Confirme a instalação</li>
+          </ol>
+        )}
+
+        {platform === "desktop" && !hasNativePrompt && (
+          <p className="mt-4 text-sm text-white/60 leading-relaxed text-left">
+            No Chrome/Edge: ícone de instalação na barra de endereço, ou menu →{" "}
+            <strong className="text-white">Instalar King Food</strong>.
+          </p>
+        )}
+
+        {showNativeButton && (
+          <button
+            type="button"
+            onClick={onInstall}
+            className="mt-5 w-full min-h-[48px] rounded-2xl bg-[#FFD100] py-3.5 text-sm font-bold text-black shadow-lg shadow-[#FFD100]/20 active:scale-[0.98] transition"
+          >
+            Instalar agora
+          </button>
+        )}
+
         <button
           type="button"
           onClick={onDismiss}
-          className="mt-2 w-full min-h-[44px] py-2.5 text-sm font-medium text-white/40 hover:text-white/70 transition"
+          className={`${showNativeButton ? "mt-2" : "mt-5"} w-full min-h-[44px] py-2.5 text-sm font-medium text-white/40 hover:text-white/70 transition`}
         >
-          Agora não
+          {showNativeButton ? "Agora não" : "Entendi"}
         </button>
       </div>
     </div>
@@ -235,12 +292,13 @@ export default function Home() {
   const [iframeError, setIframeError] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
-  const [showInstallModal, setShowInstallModal] = useState(false);
-  const [showInstallBanner, setShowInstallBanner] = useState(false);
-  const [installPlatform, setInstallPlatform] = useState<"android" | "ios" | "desktop">("android");
-  const [scrolled, setScrolled] = useState(false);
-  const [openStatus, setOpenStatus] = useState<OpenStatus>(() => computeOpenStatus());
-  const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
+    const [hasNativePrompt, setHasNativePrompt] = useState(false);
+    const [showInstallModal, setShowInstallModal] = useState(false);
+    const [showInstallBanner, setShowInstallBanner] = useState(false);
+    const [installPlatform, setInstallPlatform] = useState<"android" | "ios" | "desktop">("android");
+    const [scrolled, setScrolled] = useState(false);
+    const [openStatus, setOpenStatus] = useState<OpenStatus>(() => computeOpenStatus());
+    const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
   const loadingDone = useRef(false);
   const mainRef = useRef<HTMLElement>(null);
   const ctaPrimaryRef = useRef<HTMLButtonElement>(null);
@@ -254,13 +312,12 @@ export default function Home() {
   }, []);
 
   const tryShowInstallSoft = useCallback(() => {
-    if (isStandaloneMode()) return;
-    const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
-    if (dismissed) return;
-    if (!deferredPrompt.current && !window.__kfDeferredPrompt) return;
-    setCanInstall(true);
-    // Soft: only banner, never auto-modal on first paint
-  }, []);
+      if (isStandaloneMode()) return;
+      const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
+      if (dismissed) return;
+      setCanInstall(true);
+      // Soft: only banner, never auto-modal on first paint
+    }, []);
 
   useEffect(() => {
     const logoTimer = setTimeout(() => setShowLogo(true), 100);
@@ -270,24 +327,24 @@ export default function Home() {
     }, 1800);
 
     // Install prompt delayed — don't interrupt first order intent (12s)
-    const bannerTimer = setTimeout(() => {
-      if (isStandaloneMode()) return;
-      const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
-      if (dismissed) return;
+        const bannerTimer = setTimeout(() => {
+          if (isStandaloneMode()) return;
+          const dismissed = sessionStorage.getItem(INSTALL_DISMISS_KEY) === "1";
+          if (dismissed) return;
 
-      if (deferredPrompt.current || window.__kfDeferredPrompt) {
-        setCanInstall(true);
-        setShowInstallBanner(true);
-        return;
-      }
+          const plat = detectInstallPlatform();
+          setInstallPlatform(plat);
+          setCanInstall(true);
 
-      const ua = navigator.userAgent;
-      const isIOS =
-        /iPad|iPhone|iPod/.test(ua) && !(window as Window & { MSStream?: unknown }).MSStream;
-      const isAndroid = /Android/.test(ua);
-      setInstallPlatform(isIOS ? "ios" : isAndroid ? "android" : "desktop");
-      setShowInstallBanner(true);
-    }, 12_000);
+          if (deferredPrompt.current || window.__kfDeferredPrompt) {
+            setHasNativePrompt(true);
+            setShowInstallBanner(true);
+            return;
+          }
+
+          // iOS / browsers without BIP: still show soft banner with instructions
+          setShowInstallBanner(true);
+        }, 12_000);
 
     return () => {
       clearTimeout(logoTimer);
@@ -419,61 +476,67 @@ export default function Home() {
   }, [tab]);
 
   useEffect(() => {
-    if (isStandaloneMode()) {
-      setCanInstall(false);
-      setShowInstallModal(false);
-      setShowInstallBanner(false);
-      return;
-    }
-
-    const adoptPrompt = (evt: BeforeInstallPromptEvent | null | undefined) => {
-      if (!evt) return;
-      try {
-        evt.preventDefault();
-      } catch {
-        /* already prevented */
+      if (isStandaloneMode()) {
+        setCanInstall(false);
+        setHasNativePrompt(false);
+        setShowInstallModal(false);
+        setShowInstallBanner(false);
+        return;
       }
-      deferredPrompt.current = evt;
-      window.__kfDeferredPrompt = evt;
+
+      setInstallPlatform(detectInstallPlatform());
+      // Mostra atalho de instalar mesmo antes do BIP (instruções iOS/Android)
       setCanInstall(true);
-      tryShowInstallSoft();
-    };
 
-    adoptPrompt(window.__kfDeferredPrompt ?? null);
-
-    const onKfBip = () => adoptPrompt(window.__kfDeferredPrompt ?? null);
-    const onBeforeInstall = (e: Event) => {
-      e.preventDefault();
-      adoptPrompt(e as BeforeInstallPromptEvent);
-    };
-    const onInstalled = () => {
-      window.__kfDeferredPrompt = null;
-      deferredPrompt.current = null;
-      setCanInstall(false);
-      setShowInstallModal(false);
-      setShowInstallBanner(false);
-    };
-
-    window.addEventListener("kf-beforeinstallprompt", onKfBip);
-    window.addEventListener("beforeinstallprompt", onBeforeInstall);
-    window.addEventListener("appinstalled", onInstalled);
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistration().then((reg) => {
-        if (!reg) {
-          navigator.serviceWorker.register("/sw.js").catch(() => {});
-        } else {
-          reg.update().catch(() => {});
+      const adoptPrompt = (evt: BeforeInstallPromptEvent | null | undefined) => {
+        if (!evt) return;
+        try {
+          evt.preventDefault();
+        } catch {
+          /* already prevented */
         }
-      });
-    }
+        deferredPrompt.current = evt;
+        window.__kfDeferredPrompt = evt;
+        setHasNativePrompt(true);
+        setCanInstall(true);
+        tryShowInstallSoft();
+      };
 
-    return () => {
-      window.removeEventListener("kf-beforeinstallprompt", onKfBip);
-      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
-      window.removeEventListener("appinstalled", onInstalled);
-    };
-  }, [tryShowInstallSoft]);
+      adoptPrompt(window.__kfDeferredPrompt ?? null);
+
+      const onKfBip = () => adoptPrompt(window.__kfDeferredPrompt ?? null);
+      const onBeforeInstall = (e: Event) => {
+        e.preventDefault();
+        adoptPrompt(e as BeforeInstallPromptEvent);
+      };
+      const onInstalled = () => {
+        window.__kfDeferredPrompt = null;
+        deferredPrompt.current = null;
+        setHasNativePrompt(false);
+        setCanInstall(false);
+        setShowInstallModal(false);
+        setShowInstallBanner(false);
+      };
+
+      window.addEventListener("kf-beforeinstallprompt", onKfBip);
+      window.addEventListener("beforeinstallprompt", onBeforeInstall);
+      window.addEventListener("appinstalled", onInstalled);
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((reg) => {
+            reg.update().catch(() => {});
+          })
+          .catch(() => {});
+      }
+
+      return () => {
+        window.removeEventListener("kf-beforeinstallprompt", onKfBip);
+        window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+        window.removeEventListener("appinstalled", onInstalled);
+      };
+    }, [tryShowInstallSoft]);
 
   // Prefetch cardápio em background assim que o splash acaba
     useEffect(() => {
@@ -494,26 +557,36 @@ export default function Home() {
     }, [tab, menuMounted, iframeReady]);
 
     const handleInstall = async () => {
-      const promptEvent =
-        deferredPrompt.current || (window.__kfDeferredPrompt as BeforeInstallPromptEvent | null);
-      if (!promptEvent) {
-        setShowInstallModal(false);
-        return;
-      }
-      setShowInstallModal(false);
-      try {
-        await promptEvent.prompt();
-        const { outcome } = await promptEvent.userChoice;
-        if (outcome === "accepted") {
-          deferredPrompt.current = null;
-          window.__kfDeferredPrompt = null;
-          setCanInstall(false);
-          setShowInstallBanner(false);
-        }
-      } catch {
-        /* cancelled */
-      }
-    };
+          const promptEvent =
+            deferredPrompt.current || (window.__kfDeferredPrompt as BeforeInstallPromptEvent | null);
+
+          // Sem prompt nativo (iOS / Chrome sem BIP): mantém modal com instruções
+          if (!promptEvent) {
+            setInstallPlatform(detectInstallPlatform());
+            setShowInstallModal(true);
+            return;
+          }
+
+          try {
+            await promptEvent.prompt();
+            const { outcome } = await promptEvent.userChoice;
+            if (outcome === "accepted") {
+              deferredPrompt.current = null;
+              window.__kfDeferredPrompt = null;
+              setHasNativePrompt(false);
+              setCanInstall(false);
+              setShowInstallBanner(false);
+              setShowInstallModal(false);
+            } else {
+              // Usuário cancelou o prompt do browser — fecha modal
+              setShowInstallModal(false);
+            }
+          } catch {
+            // Prompt já usado ou bloqueado — mostra instruções manuais
+            setHasNativePrompt(false);
+            setShowInstallModal(true);
+          }
+        };
 
     const dismissInstallModal = () => {
       sessionStorage.setItem(INSTALL_DISMISS_KEY, "1");
@@ -920,14 +993,17 @@ export default function Home() {
                       </a>
 
                       {canInstall && (
-                        <button
-                          type="button"
-                          onClick={() => setShowInstallModal(true)}
-                          className="mt-2 min-h-[44px] text-sm font-medium text-white/40 hover:text-white/70 py-1.5 transition"
-                        >
-                          + Instalar app
-                        </button>
-                      )}
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setInstallPlatform(detectInstallPlatform());
+                                                  setShowInstallModal(true);
+                                                }}
+                                                className="mt-2 min-h-[44px] text-sm font-medium text-white/40 hover:text-white/70 py-1.5 transition"
+                                              >
+                                                + Instalar app
+                                              </button>
+                                            )}
                     </div>
 
                     <div className="hidden md:flex flex-col gap-4 flex-1 mt-0">
@@ -1074,36 +1150,43 @@ export default function Home() {
               ) : null}
             </div>
 
-      <InstallModal open={showInstallModal} onInstall={handleInstall} onDismiss={dismissInstallModal} />
+      <InstallModal
+              open={showInstallModal}
+              onInstall={handleInstall}
+              onDismiss={dismissInstallModal}
+              platform={installPlatform}
+              hasNativePrompt={hasNativePrompt}
+            />
 
-      {/* Soft install banner — delayed, bottom, not blocking CTA */}
-      {showInstallBanner && !showInstallModal && tab === "home" && (
-        <div className="fixed bottom-14 md:bottom-4 left-0 right-0 z-[90] px-4 pointer-events-none">
-          <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl p-3 shadow-2xl flex items-center gap-3">
-            <div className="shrink-0 w-10 h-10 rounded-xl bg-[#FFD100] flex items-center justify-center">
-              <img src={LOGO} alt="" className="w-7 h-7 object-contain" decoding="async" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white">Peça mais rápido</p>
-                            <p className="text-xs text-white/50 leading-snug">
-                              {installPlatform === "ios"
-                                ? "Compartilhar → Tela de Início"
-                                : "App na tela inicial do celular"}
-                            </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (deferredPrompt.current || window.__kfDeferredPrompt) {
-                  handleInstall();
-                } else {
-                  setShowInstallModal(true);
-                }
-              }}
-              className="shrink-0 min-h-[40px] rounded-xl bg-[#FFD100] px-3 py-2 text-xs font-bold text-black active:scale-95 transition"
-            >
-              {installPlatform === "ios" ? "Ver" : "Instalar"}
-            </button>
+            {/* Soft install banner — delayed, bottom, not blocking CTA */}
+            {showInstallBanner && !showInstallModal && tab === "home" && (
+              <div className="fixed bottom-14 md:bottom-4 left-0 right-0 z-[90] px-4 pointer-events-none">
+                <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-white/10 bg-black/90 backdrop-blur-xl p-3 shadow-2xl flex items-center gap-3">
+                  <div className="shrink-0 w-10 h-10 rounded-xl bg-[#FFD100] flex items-center justify-center">
+                    <img src={LOGO} alt="" className="w-7 h-7 object-contain" decoding="async" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white">Peça mais rápido</p>
+                    <p className="text-xs text-white/50 leading-snug">
+                      {installPlatform === "ios"
+                        ? "Compartilhar → Tela de Início"
+                        : "App na tela inicial do celular"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInstallPlatform(detectInstallPlatform());
+                      if (deferredPrompt.current || window.__kfDeferredPrompt) {
+                        void handleInstall();
+                      } else {
+                        setShowInstallModal(true);
+                      }
+                    }}
+                    className="shrink-0 min-h-[40px] rounded-xl bg-[#FFD100] px-3 py-2 text-xs font-bold text-black active:scale-95 transition"
+                  >
+                    {installPlatform === "ios" ? "Ver" : "Instalar"}
+                  </button>
             <button
               type="button"
               onClick={() => {

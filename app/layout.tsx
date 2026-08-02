@@ -89,9 +89,14 @@ export default function RootLayout({
     <html lang="pt-BR">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <link rel="preconnect" href="https://kingfood.fe-v2.ola.click" crossOrigin="" />
+                <meta name="mobile-web-app-capable" content="yes" />
+                <meta name="apple-mobile-web-app-capable" content="yes" />
+                <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+                <meta name="apple-mobile-web-app-title" content="King Food" />
+                <link rel="apple-touch-icon" href="/icons/launchericon-180x180.png" />
+                <link rel="icon" type="image/png" sizes="192x192" href="/icons/launchericon-192x192.png" />
+                <link rel="icon" type="image/png" sizes="512x512" href="/icons/launchericon-512x512.png" />
+                <link rel="preconnect" href="https://kingfood.fe-v2.ola.click" crossOrigin="" />
         <link rel="dns-prefetch" href="https://kingfood.fe-v2.ola.click" />
         <link rel="preload" href="/bg-acai.jpg" as="image" type="image/jpeg" />
         <link rel="preload" href="/logo-kingfood.png.png" as="image" type="image/png" />

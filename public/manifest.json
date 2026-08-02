@@ -1,14 +1,17 @@
 {
+  "id": "/",
   "name": "King Food",
   "short_name": "King Food",
-  "description": "Açaí Premium Delivery em Columbus, OH",
-  "start_url": "/",
+  "description": "Açaí BR da saudade · Delivery em Columbus, OH",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#FFD100",
+  "orientation": "portrait-primary",
+  "background_color": "#000000",
   "theme_color": "#000000",
   "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["food", "shopping"],
   "icons": [
     {
       "src": "/icons/launchericon-48x48.png",
@@ -47,7 +50,7 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/launchericon-512x512.png",
+      "src": "/icons/launchericon-512x512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
