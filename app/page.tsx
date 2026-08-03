@@ -1132,20 +1132,26 @@ export default function Home() {
 
                     <div className="hidden md:flex flex-col gap-4 flex-1 mt-0">
                       <a
-                        href={MAPS_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 active:scale-[0.98] transition min-h-[72px]"
-                      >
-                        <div className="shrink-0 w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
-                          <GoogleGIcon className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-white">Google Business</p>
-                          <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
-                          <p className="text-xs font-medium text-white/75">Maps · Columbus, OH</p>
-                        </div>
-                      </a>
+                                              href={MAPS_URL}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 active:scale-[0.98] transition min-h-[72px]"
+                                            >
+                                              <div className="shrink-0 w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                <GoogleGIcon className="w-6 h-6" />
+                                              </div>
+                                              <div>
+                                                <p className="text-sm font-bold text-white">Google Business</p>
+                                                <p
+                                                  className="flex items-center gap-0.5 text-[15px] leading-none text-[#FFD100] drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+                                                  aria-label="5 estrelas no Google"
+                                                >
+                                                  <span aria-hidden>★★★★★</span>
+                                                </p>
+                                                <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
+                                                <p className="text-xs font-medium text-white/75">Maps · Columbus, OH</p>
+                                              </div>
+                                            </a>
 
                       <div className="grid grid-cols-2 gap-3">
                         <a
@@ -1207,20 +1213,26 @@ export default function Home() {
                     <div className="w-full mt-5 text-left px-5">
                       <h2 className="text-sm font-extrabold text-white mb-2.5 drop-shadow-[0_1px_6px_rgba(0,0,0,0.85)]">Avaliações</h2>
                       <a
-                        href={MAPS_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 active:scale-[0.98] transition min-h-[64px]"
-                      >
-                        <div className="shrink-0 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                          <GoogleGIcon className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-white">Google Business</p>
-                          <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
-                          <p className="text-xs font-medium text-white/75">Maps · Columbus, OH</p>
-                        </div>
-                      </a>
+                                              href={MAPS_URL}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 active:scale-[0.98] transition min-h-[64px]"
+                                            >
+                                              <div className="shrink-0 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                <GoogleGIcon className="w-5 h-5" />
+                                              </div>
+                                              <div>
+                                                <p className="text-sm font-bold text-white">Google Business</p>
+                                                <p
+                                                  className="flex items-center gap-0.5 text-[15px] leading-none text-[#FFD100] drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+                                                  aria-label="5 estrelas no Google"
+                                                >
+                                                  <span aria-hidden>★★★★★</span>
+                                                </p>
+                                                <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
+                                                <p className="text-xs font-medium text-white/75">Maps · Columbus, OH</p>
+                                              </div>
+                                            </a>
                     </div>
 
                     <div className="w-full mt-4 text-left px-5 pb-4">
